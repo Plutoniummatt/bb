@@ -19,11 +19,6 @@ module.exports = robot => {
     }
   });
 
-  // bb help
-  robot.respond(/\s+help/i, res => {
-    res.send("No help for you.");
-  });
-
   robot.respond(/\s+reset/i, res => {
     robot.brain.set('sq-badminton-bot_players', null);
   });
