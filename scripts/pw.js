@@ -8,8 +8,8 @@
  *   }
  * }
  */
-const PLAYERS = 'sq-badminton-bot_players';
-
+const { PLAYERS_REDIS_KEY } = require('./common/constants');
+const { sessionStarted } = require('./common/functions');
 const ZODIAC = [
   'mouse',
   'ox',
@@ -29,6 +29,10 @@ const ZODIAC = [
 module.exports = robot => {
   // bb pw mattp monkey
   robot.respond(/\s+pw\s+([a-zA-Z]+)\s+([a-zA-Z]+)/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
+
     const username = res.match[1].toLowerCase();
     const password = res.match[2].toLowerCase();
 
@@ -40,11 +44,11 @@ module.exports = robot => {
       return;
     }
 
-    const players = robot.brain.get(PLAYERS);
+    const players = robot.brain.get(PLAYERS_REDIS_KEY);
     if (players) {
       players[username] = { password };
     } else {
-      robot.brain.set(PLAYERS, {
+      robot.brain.set(PLAYERS_REDIS_KEY, {
         [username]: {
           password
         }
@@ -56,7 +60,11 @@ module.exports = robot => {
 
   // bb pw
   robot.respond(/\s+pw$/i, res => {
-    const players = robot.brain.get(PLAYERS);
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
+
+    const players = robot.brain.get(PLAYERS_REDIS_KEY);
     if (players && Object.keys(players).length > 0) {
       res.send("Let's see, I have the following players signed up:");
       for (let playerName in players) {
@@ -70,13 +78,17 @@ module.exports = robot => {
 
   // bb pw remove mattp
   robot.respond(/\s+pw\s+remove\s+([a-zA-Z]+)/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
+
     const username = res.match[1].toLowerCase();
-    const players = robot.brain.get(PLAYERS);
+    const players = robot.brain.get(PLAYERS_REDIS_KEY);
     if (players) {
       if (players[username]) {
         delete players[username];
         res.send(`I will forget \`${username}\``);
-        robot.brain.set(PLAYERS, players);
+        robot.brain.set(PLAYERS_REDIS_KEY, players);
       } else {
         res.send(`Huh? Who is \`${username}\`?`);
       }

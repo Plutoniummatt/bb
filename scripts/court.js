@@ -15,7 +15,7 @@ const moment = require("moment");
 // Notes:
 //   <optional notes required for the script>
 
-const REDIS_KEY = 'sq-badminton-bot_COURTS';
+const { COURTS_REDIS_KEY } = require('./common/constants');
 
 // {
 //   court_24: [{
@@ -26,14 +26,13 @@ const REDIS_KEY = 'sq-badminton-bot_COURTS';
 //   ],
 // }
 
-console.log('moment is...', moment);
 module.exports = robot => {
   function getAllCourts() {
-    return robot.brain.get(REDIS_KEY) || {};
+    return robot.brain.get(COURTS_REDIS_KEY) || {};
   };
 
   function setAllCourts(court) {
-    return robot.brain.set(REDIS_KEY, court);
+    return robot.brain.set(COURTS_REDIS_KEY, court);
   }
 
   function addCourt(number, players, randoms, delayTime = 0) {
