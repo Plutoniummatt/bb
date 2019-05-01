@@ -1,3 +1,5 @@
+const moment = require("moment");
+
 // Description:
 // <description of the scripts functionality>
 //
@@ -24,6 +26,7 @@ const REDIS_KEY = 'sq-badminton-bot_COURTS';
 //   ],
 // }
 
+console.log('moment is...', moment);
 module.exports = robot => {
   function getAllCourts() {
     return robot.brain.get(REDIS_KEY) || {};
@@ -37,7 +40,7 @@ module.exports = robot => {
     const courts = getAllCourts();
 
     // startAt = moment().add(delayTime, 'minutes');
-    startAt = delayTime;
+    startAt = moment().add(delayTime, 'minutes');
     courts[`court_${number}`] = courts[`court_${number}`] || [];
     courts[`court_${number}`].push({
       players,
