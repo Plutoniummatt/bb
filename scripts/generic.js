@@ -2,7 +2,7 @@ module.exports = robot => {
   // bb start
   robot.respond(/\s+start/, res => {
     if (robot.brain.get('started')) {
-      res.send("People are already playing! Get on with it.");
+      res.send("People are already playing! Get on with it. - jonchay");
     } else {
       robot.brain.set('started', true);
       res.send("Starting badminton session now. Enjoy!");
