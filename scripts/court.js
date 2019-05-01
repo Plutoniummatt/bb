@@ -12,7 +12,42 @@
 //
 // Notes:
 //   <optional notes required for the script>
+
+const REDIS_KEY = 'sq-badminton-bot_COURTS';
+
+// {
+//   court_24: [{
+//     players: playerNames,
+//     randoms: true/false,
+//     startAt: ....
+//   },
+//   ],
+// }
+
 module.exports = robot => {
+  function getAllCourts() {
+    return robot.brain.get(REDIS_KEY) || {};
+  };
+
+  function setAllCourts(court) {
+    return robot.brain.set(REDIS_KEY, court);
+  }
+
+  function addCourt(number, players, randoms, delayTime = 0) {
+    const courts = getAllCourts();
+
+    // startAt = moment().add(delayTime, 'minutes');
+    startAt = delayTime;
+    courts[`court_${number}`] = courts[`court_${number}`] || [];
+    courts[`court_${number}`].push({
+      players,
+      randoms,
+      startAt,
+    })
+
+    setAllCourts(courts);
+  };
+
   // bb ct|court|crt <court_number> <names>... <delay_time>
   robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/i, res => {
     const courtNumber = res.match[1]
@@ -34,6 +69,17 @@ module.exports = robot => {
     const playerDescription = `\`${args.join(`\`, \``)}\` and \`${lastPlayer}\``;
     // Court 24 reserved with players “mattp” and “jonchay” starting in 42 minutes
     let courtDescription = `Court \`${courtNumber}\` reserved with players ${playerDescription}`;
+
+    addCourt(
+      courtNumber,
+      args,
+      false,
+      !isNaN(delayTime) ? delayTime : 0
+    );
+
+    const courts = getAllCourts();
+    res.send(JSON.stringify(courts));
+
     res.send(`${courtDescription} ${expiringTimeDescription}`);
   });
 

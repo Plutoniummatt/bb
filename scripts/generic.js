@@ -21,5 +21,6 @@ module.exports = robot => {
 
   robot.respond(/\s+reset/i, res => {
     robot.brain.set('sq-badminton-bot_players', null);
+    robot.brain.set('sq-badminton-bot_COURTS', null);
   });
 };
