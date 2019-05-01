@@ -1,6 +1,6 @@
 module.exports = robot => {
   // bb ct
-  robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/, res => {
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/i, res => {
     const courtNumber = res.match[1]
     const args = res.match[2].split(' ').filter(Boolean);
     const delayTime = parseInt(args[args.length - 1]);

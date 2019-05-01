@@ -1,6 +1,6 @@
 module.exports = robot => {
   // bb start
-  robot.respond(/\s+start/, res => {
+  robot.respond(/\s+start/i, res => {
     if (robot.brain.get('started')) {
       res.send("People are already playing! Get on with it. - jonchay");
     } else {
@@ -10,7 +10,7 @@ module.exports = robot => {
   });
 
   // bb stop
-  robot.respond(/\s+stop/, res => {
+  robot.respond(/\s+stop/i, res => {
     if (robot.brain.get('started')) {
       robot.brain.set('started', false);
       res.send("Ending badminton session. You’ve played X hours and Y mins.");
@@ -20,11 +20,11 @@ module.exports = robot => {
   });
 
   // bb help
-  robot.respond(/\s+help/, res => {
+  robot.respond(/\s+help/i, res => {
     res.send("No help for you.");
   });
 
-  robot.respond(/\s+reset/, res => {
+  robot.respond(/\s+reset/i, res => {
     robot.brain.set('sq-badminton-bot_players', null);
   });
 };

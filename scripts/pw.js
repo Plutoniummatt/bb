@@ -2,7 +2,7 @@ const PLAYERS = 'sq-badminton-bot_players';
 
 module.exports = robot => {
   // bb pw mattp monkey
-  robot.respond(/\s+pw\s+([a-zA-Z]+)\s+([a-zA-Z]+)/, res => {
+  robot.respond(/\s+pw\s+([a-zA-Z]+)\s+([a-zA-Z]+)/i, res => {
     const username = res.match[1];
     const password = res.match[2];
 
@@ -25,7 +25,7 @@ module.exports = robot => {
   });
 
   // bb pw
-  robot.respond(/\s+pw$/, res => {
+  robot.respond(/\s+pw$/i, res => {
     const players = robot.brain.get(PLAYERS);
     if (players && Object.keys(players).length > 0) {
       for (let playerName in players) {
@@ -39,7 +39,7 @@ module.exports = robot => {
   });
 
   // bb pw remove mattp
-  robot.respond(/\s+pw\s+remove\s+([a-zA-Z]+)/, res => {
+  robot.respond(/\s+pw\s+remove\s+([a-zA-Z]+)/i, res => {
     const username = res.match[1];
     const players = robot.brain.get(PLAYERS);
     if (players) {
