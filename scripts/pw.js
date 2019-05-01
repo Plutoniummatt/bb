@@ -8,7 +8,7 @@
  *   }
  * }
  */
-const { PLAYERS_REDIS_KEY } = require('./common/constants');
+const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY } = require('./common/constants');
 const { sessionStarted } = require('./common/functions');
 const ZODIAC = [
   'mouse',
@@ -26,6 +26,23 @@ const ZODIAC = [
   'cat'
 ];
 
+function getPlayerSignupStatuses(robot) {
+  const courts = robot.brain.get(COURTS_REDIS_KEY);
+  if (courts) {
+    playerStatuses = {};
+    for (let court in courts) {
+      courts[court].forEach(reservation => {
+        reservation.players.forEach(player => {
+          playerStatuses[player] = court;
+        });
+      });
+    }
+    return playerStatuses;
+  } else {
+    return {};
+  }
+}
+
 module.exports = robot => {
   // bb pw mattp monkey
   robot.respond(/\s+pw\s+([a-zA-Z]+)\s+([a-zA-Z]+)/i, res => {
@@ -40,7 +57,7 @@ module.exports = robot => {
       return;
     }
     if (!ZODIAC.includes(password)) {
-      res.send(`\`${password}\` isn't a Chinese zodiac animal, uh hello?`);
+      res.reply(`\`${password}\` isn't a Chinese zodiac animal, uh hello?`);
       return;
     }
 
@@ -55,7 +72,7 @@ module.exports = robot => {
       });
     }
 
-    res.send(`Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
+    res.reply(`Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
   });
 
   // bb pw
@@ -66,11 +83,20 @@ module.exports = robot => {
 
     const players = robot.brain.get(PLAYERS_REDIS_KEY);
     if (players && Object.keys(players).length > 0) {
-      res.send("Let's see, I have the following players signed up:");
+      const signedUpPlayers = getPlayerSignupStatuses(robot);
+
+      let reply = "Let's see, I have the following players signed up:\n";
       for (let playerName in players) {
         const password = players[playerName].password;
-        res.send(`\`${playerName}\` - \`${password}\`:${password}:`);
+        const signedUpCourt = signedUpPlayers[playerName];
+
+        if (signedUpCourt) {
+          reply = reply + `:x: (Court ${signedUpCourt.split('_')[1]}) \`${playerName}\` - \`${password}\``.padEnd(40) + '\n'
+        } else {
+          reply = reply + `:white_check_mark: (Available) \`${playerName}\` - \`${password}\``.padEnd(40) + '\n'
+        }
       }
+      res.send(reply);
     } else {
       res.send('Nobody has signed up yet Q_Q');
     }
@@ -87,10 +113,10 @@ module.exports = robot => {
     if (players) {
       if (players[username]) {
         delete players[username];
-        res.send(`I will forget \`${username}\``);
+        res.reply(`I will forget \`${username}\``);
         robot.brain.set(PLAYERS_REDIS_KEY, players);
       } else {
-        res.send(`Huh? Who is \`${username}\`?`);
+        res.reply(`Huh? Who is \`${username}\`?`);
       }
     }
   });

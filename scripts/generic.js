@@ -9,7 +9,7 @@ function reset(robot) {
 
 module.exports = robot => {
   // bb start
-  robot.respond(/\s+start/i, res => {
+  robot.respond(/\s+start$/i, res => {
     if (robot.brain.get(SESSION_REDIS_KEY)) {
       res.send("People are already playing! Get on with it.");
     } else {
@@ -21,7 +21,7 @@ module.exports = robot => {
   });
 
   // bb stop
-  robot.respond(/\s+stop/i, res => {
+  robot.respond(/\s+stop$/i, res => {
     const session = robot.brain.get(SESSION_REDIS_KEY);
     if (session) {
       robot.brain.set(SESSION_REDIS_KEY, null);

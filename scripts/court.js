@@ -74,7 +74,7 @@ module.exports = robot => {
 
     addCourt(
       courtNumber,
-      args,
+      [args, lastPlayer],
       false,
       !isNaN(delayTime) ? delayTime : 0
     );
