@@ -23,4 +23,8 @@ module.exports = robot => {
   robot.respond(/\s+help/, res => {
     res.send("No help for you.");
   });
+
+  robot.respond(/\s+reset/, res => {
+    robot.brain.set('sq-badminton-bot_players', null);
+  });
 };
