@@ -1,3 +1,20 @@
+// Description:
+// <description of the scripts functionality>
+//
+// Dependencies:
+// "<module name>": "<module version>"
+//
+// Configuration:
+//   LIST_OF_ENV_VARS_TO_SET
+//
+// Commands:
+//   *bb pw* - Show all players and their passwords and play status
+//   bb pw <player_name> <password> - Add player name and password to list
+//   bb pw remove <player_name> - Remove player from list
+//
+// Notes:
+//   <optional notes required for the script>
+
 /**
  * {
  *   mattp: {

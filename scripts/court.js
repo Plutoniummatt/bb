@@ -1,7 +1,3 @@
-const moment = require("moment");
-// by default 45 minutes is considered "in an hour", increase the threshold
-moment.relativeTimeThreshold('m', 50);
-
 // Description:
 // <description of the scripts functionality>
 //
@@ -12,14 +8,20 @@ moment.relativeTimeThreshold('m', 50);
 //   LIST_OF_ENV_VARS_TO_SET
 //
 // Commands:
+//   *bab ct|court|crt* - Show status of all courts
 //   bab ct|court|crt <court_number> <name>.... <delay_time> - Register the court number with the player names
+//   bab ct|court|crt <court_number> randoms <delay_time> - Register the court number with randoms currently playing
+//   bab ct|court|crt reset <court_number> - Remove all queued groups from court number
 //
 // Notes:
 //   <optional notes required for the script>
 
+const moment = require("moment");
 const { COURTS_REDIS_KEY } = require('./common/constants');
 const { sessionStarted, playerExists, getPlayerSignupStatuses } = require('./common/functions');
 const COURT_DURATION = 45; // minutes
+// by default 45 minutes is considered "in an hour", increase the threshold
+moment.relativeTimeThreshold('m', 50);
 
 function humanizePlayers(players) {
   const allPlayers = players.slice(0);
