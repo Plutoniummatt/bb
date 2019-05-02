@@ -9,9 +9,9 @@
 //
 // Commands:
 //   *bab ct|court|crt* - Show status of all courts
-//   bab ct|court|crt <court_number> <name>.... <delay_time> - Register the court number with the player names
-//   bab ct|court|crt <court_number> randoms <delay_time> - Register the court number with randoms currently playing
-//   bab ct|court|crt reset <court_number> - Remove all queued groups from court number
+//   *bab ct|court|crt <court_number> <name>.... <delay_time>* - Register the court number with the player names
+//   *bab ct|court|crt <court_number> randoms <delay_time>* - Register the court number with randoms currently playing
+//   *bab ct|court|crt reset <court_number>* - Remove all queued groups from court number
 //
 // Notes:
 //   <optional notes required for the script>
