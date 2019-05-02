@@ -106,16 +106,19 @@ module.exports = robot => {
       delayTime
     } = parseMatches(res.match);
 
-    for (let player in players) {
-      if (!playerExists(player, robot)) {
-        res.reply(`:x: Who is this ${player} person?? did you forget to \`bb pw ${player} {password}\`?`);
+    if (players[0] !== 'randoms') {
+      if (players.length === 1) {
+        res.reply(':x: You must sign up a court with more than one player');
         return;
       }
-    }
 
-    if (players.length === 1 && players[0] !== 'randoms') {
-      res.reply(':x: You must sign up a court with more than one player');
-      return;
+      for (let player in players) {
+        const playerName = players[player];
+        if (!playerExists(playerName, robot)) {
+          res.reply(`:x: Who is this ${playerName} person?? did you forget to \`bb pw ${playerName} {password}\`?`);
+          return;
+        }
+      }
     }
 
     const newCourt = addCourt(
@@ -128,7 +131,7 @@ module.exports = robot => {
 
     const courtDescription = humanizeCourtWithPlayers(courtNumber, players, newCourt.randoms);
     const fromNowDescription = `starting ${moment(newCourt.startAt).fromNow()}`;
-    res.send(`${courtDescription} ${fromNowDescription}`);
+    res.send(`:white_check_mark: ${courtDescription} ${fromNowDescription}`);
   });
 
   // bb ct|court|crt status
@@ -143,19 +146,19 @@ module.exports = robot => {
     *Court 24*
     `mattp`, `jon` playing now
    */
-  robot.respond(/\s+(?:ct|court|crt)\s+status$/i, res => {
+  robot.respond(/\s+(?:ct|court|crt)$/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
     }
     const courts = getAllCourts(robot);
-    let allCourtsDescription = ':badminton_racquet_and_shuttlecock: *Court Status:*';
+    let allCourtsDescription = '';
 
     for (const [courtKey, courtQueue] of Object.entries(courts)) {
       if (courtQueue.length === 1 && courtQueue[0].randoms) {
         continue;
       }
 
-      allCourtsDescription += `\n*Court ${courtKey.split('_')[1]}*`;
+      allCourtsDescription += `*Court ${courtKey.split('_')[1]}*`;
 
       courtQueue.forEach(queue => {
         const timeDescription = moment().isAfter(queue.startAt)
@@ -163,8 +166,8 @@ module.exports = robot => {
           : moment(queue.startAt).fromNow();
 
         const playingDescription = queue.randoms
-          ? `Randoms playing ${timeDescription}`
-          : `${humanizePlayers(queue.players)} playing ${timeDescription}`;
+          ? `_playing ${timeDescription}_ (*Randoms*)`
+          : `_playing ${timeDescription}_ (${humanizePlayers(queue.players)})`;
 
         allCourtsDescription += `\n${playingDescription}`;
       });
