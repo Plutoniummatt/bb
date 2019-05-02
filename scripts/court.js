@@ -132,10 +132,10 @@ module.exports = robot => {
    */
   robot.respond(/\s+(?:ct|court|crt)\s+status$/i, res => {
     const courts = getAllCourts(robot);
-    let allCourtsDescription = ':badminton_racquet_and_shuttlecock: Court Status:*';
+    let allCourtsDescription = ':badminton_racquet_and_shuttlecock: *Court Status:*';
 
     for (const [courtKey, courtQueue] of Object.entries(courts)) {
-      allCourtsDescription += `\n*Court ${courtKey.split('_')[1]}`;
+      allCourtsDescription += `\n*Court ${courtKey.split('_')[1]}*`;
 
       courtQueue.forEach(queue => {
         const timeDescription = moment().isAfter(queue.startAt)
