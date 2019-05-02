@@ -90,10 +90,13 @@ module.exports = robot => {
       delayTime
     );
 
-    const courts = getAllCourts();
-    res.send(JSON.stringify(courts));
     res.send(`${courtDescription} ${expiringTimeDescription}`);
   });
 
   // bb ct|court|crt status
+  robot.respond(/\s+(?:ct|court|crt)\s+status$/i, res => {
+    const courts = getAllCourts();
+    res.send(`Beep boop... gathering court status...`);
+    res.send(`\`\`\`${JSON.stringify(courts, null, 2)}\`\`\``);
+  });
 };
