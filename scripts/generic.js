@@ -1,3 +1,18 @@
+// Description:
+// <description of the scripts functionality>
+//
+// Dependencies:
+// "<module name>": "<module version>"
+//
+// Configuration:
+//   LIST_OF_ENV_VARS_TO_SET
+//
+// Commands:
+//   *bab start* - Start the badminton session
+//   *bab stop* - End the badminton session, it resets all courts and players
+//
+// Notes:
+//   <optional notes required for the script>
 const moment = require("moment");
 const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY, SESSION_REDIS_KEY } = require('./common/constants');
 
