@@ -14,42 +14,46 @@ let monitor;
 function courtMonitor(robot) {
   // Every minute
   return setInterval(() => {
-    const courts = robot.brain.get(COURTS_REDIS_KEY);
-    const players = robot.brain.get(PLAYERS_REDIS_KEY);
-
-    if (courts && players) {
-      let playerIds = new Set();
-      for (let player in players) {
-        playerIds.add(players[player].slackId);
-      }
-      let reminderMessage = `${Array.from(playerIds.values()).join(' ')}\n`;
-
-      for (let court in courts) {
-        const firstSession = courts[court][0];
-        if (!courts[court].startNotificationSent && !firstSession.randoms) {
-          if (moment().isAfter(moment(firstSession.startAt))) {
-            reminderMessage = reminderMessage + `:white_check_mark: *Court ${court.split('_')[1]}* is ours!`;
-            robot.messageRoom('#badminton', reminderMessage);
-            courts[court].startNotificationSent = true;
-          }
-        }
-
-        if (!courts[court].expiryNotificationSent && !firstSession.randoms) {
-          if (moment().isAfter(moment(firstSession.startAt).add(40, 'minutes'))) {
-            reminderMessage = reminderMessage + `:warning: One of our reservations for *Court ${court.split('_')[1]}* will expire in 5 minutes!`;
-            robot.messageRoom('#badminton', reminderMessage);
-            courts[court].expiryNotificationSent = true;
-          }
-        }
-
-        if (moment().isAfter(moment(firstSession.startAt).add(44, 'minutes'))) {
-          courts[court] = courts[court].slice(1);
-        }
-
-        robot.brain.set(COURTS_REDIS_KEY, courts);
-      }
-    }
+    periodicCourtTask(robot);
   }, 60 * 1000)
+}
+
+function periodicCourtTask(robot) {
+  const courts = robot.brain.get(COURTS_REDIS_KEY);
+  const players = robot.brain.get(PLAYERS_REDIS_KEY);
+
+  if (courts && players) {
+    let playerIds = new Set();
+    for (let player in players) {
+      playerIds.add(players[player].slackId);
+    }
+    let reminderMessage = `${Array.from(playerIds.values()).join(' ')}\n`;
+
+    for (let court in courts) {
+      const firstSession = courts[court][0];
+      if (!courts[court].startNotificationSent && !firstSession.randoms) {
+        if (moment().isAfter(moment(firstSession.startAt))) {
+          reminderMessage = reminderMessage + `:white_check_mark: *Court ${court.split('_')[1]}* is ours!`;
+          robot.messageRoom('#badminton', reminderMessage);
+          courts[court].startNotificationSent = true;
+        }
+      }
+
+      if (!courts[court].expiryNotificationSent && !firstSession.randoms) {
+        if (moment().isAfter(moment(firstSession.startAt).add(40, 'minutes'))) {
+          reminderMessage = reminderMessage + `:warning: One of our reservations for *Court ${court.split('_')[1]}* will expire in 5 minutes!`;
+          robot.messageRoom('#badminton', reminderMessage);
+          courts[court].expiryNotificationSent = true;
+        }
+      }
+
+      if (moment().isAfter(moment(firstSession.startAt).add(44, 'minutes'))) {
+        courts[court] = courts[court].slice(1);
+      }
+
+      robot.brain.set(COURTS_REDIS_KEY, courts);
+    }
+  }
 }
 
 module.exports = robot => {
