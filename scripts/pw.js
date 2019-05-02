@@ -8,9 +8,9 @@
 //   LIST_OF_ENV_VARS_TO_SET
 //
 // Commands:
-//   *bb pw* - Show all players and their passwords and play status
-//   bb pw <player_name> <password> - Add player name and password to list
-//   bb pw remove <player_name> - Remove player from list
+//   *bab pw* - Show all players and their passwords and play status
+//   bab pw <player_name> <password> - Add player name and password to list
+//   bab pw remove <player_name> - Remove player from list
 //
 // Notes:
 //   <optional notes required for the script>
