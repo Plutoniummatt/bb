@@ -163,7 +163,8 @@ module.exports = robot => {
         continue;
       }
 
-      allCourtsDescription += `*Court ${courtKey.split('_')[1]}*`;
+      const playableRightNow = courtQueue[0].randoms ? ':x:' : ':white_check_mark:';
+      allCourtsDescription += `*Court ${courtKey.split('_')[1]}* ${playableRightNow}`;
 
       courtQueue.forEach(queue => {
         const timeDescription = moment().isAfter(queue.startAt)
@@ -171,8 +172,8 @@ module.exports = robot => {
           : moment(queue.startAt).fromNow();
 
         const playingDescription = queue.randoms
-          ? `_playing ${timeDescription}_ (*Randoms*)`
-          : `_playing ${timeDescription}_ (${humanizePlayers(queue.players)})`;
+          ? `playing *${timeDescription}* (Randoms)`
+          : `playing *${timeDescription}* (${humanizePlayers(queue.players)})`;
 
         allCourtsDescription += `\n${playingDescription}`;
       });
