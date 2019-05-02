@@ -104,12 +104,12 @@ module.exports = robot => {
       delayTime
     } = parseMatches(res.match);
 
-    players.forEach(player => {
+    for (let player in players) {
       if (!playerExists(player, robot)) {
         res.reply(`:x: Who is this ${player} person?? did you forget to \`bb pw ${player} {password}\`?`);
         return;
       }
-    });
+    }
 
     if (players.length === 1 && players[0] !== 'randoms') {
       res.reply(':x: You must sign up a court with more than one player');
