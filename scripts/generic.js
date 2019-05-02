@@ -14,7 +14,7 @@ module.exports = robot => {
       res.send("People are already playing! Get on with it.");
     } else {
       robot.brain.set(SESSION_REDIS_KEY, {
-        startTime: moment()
+        startTime: moment().unix()
       });
       res.send("Starting badminton session now. Enjoy!");
     }
@@ -25,7 +25,7 @@ module.exports = robot => {
     const session = robot.brain.get(SESSION_REDIS_KEY);
     if (session) {
       robot.brain.set(SESSION_REDIS_KEY, null);
-      const timePlayed = moment.duration(moment() - session.startTime).humanize();
+      const timePlayed = moment.duration(moment().unix() - session.startTime).humanize();
       reset(robot);
       res.send(`Ending badminton session. You’ve played for ${timePlayed}.`);
     } else {
