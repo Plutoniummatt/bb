@@ -107,6 +107,7 @@ module.exports = robot => {
     players.forEach(player => {
       if (!playerExists(player, robot)) {
         res.reply(`:x: Who is this ${player} person?? did you forget to \`bb pw ${player} {password}\`?`);
+        return;
       }
     });
 
