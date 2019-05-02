@@ -5,6 +5,7 @@
   "author": "Matthew Peck <peck@squareup.com>",
   "description": "A simple helpful robot for your Company",
   "dependencies": {
+    "@slack/client": "^5.0.1",
     "hubot": "^3.3.2",
     "hubot-diagnostics": "^1.0.0",
     "hubot-google-images": "^0.2.7",
