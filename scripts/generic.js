@@ -82,7 +82,7 @@ module.exports = robot => {
     }
   });
 
-  robot.respond(/\sintro\s([a-zA-Z]+)$/i, res => {
+  robot.respond(/\sintro\s(.+)$/i, res => {
     const channelName = `#${res.match[1].toLowerCase()}`;
     const message1 = "Hello Square Badminton players! :waves: My name is `bab` (short for badminton bot), I'm here to help you keep track of passwords and court signups. This will be my first day on the job, so if you notice something that's not quite right, please notify @peck and @jonchay.\n";
     const message2 = "To see what I can do, type `bab help`, I hope I can make your lives easier! :v:"
