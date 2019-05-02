@@ -34,7 +34,7 @@ function periodicCourtTask(robot) {
       if (!courts[court].startNotificationSent && !firstSession.randoms) {
         if (moment().isAfter(moment(firstSession.startAt))) {
           reminderMessage = reminderMessage + `:white_check_mark: *Court ${court.split('_')[1]}* is ours!`;
-          robot.messageRoom('#badminton-bot-tester', reminderMessage);
+          robot.messageRoom('#badminton', reminderMessage);
           courts[court].startNotificationSent = true;
         }
       }
@@ -42,7 +42,7 @@ function periodicCourtTask(robot) {
       if (!courts[court].expiryNotificationSent && !firstSession.randoms) {
         if (moment().isAfter(moment(firstSession.startAt).add(40, 'minutes'))) {
           reminderMessage = reminderMessage + `:warning: One of our reservations for *Court ${court.split('_')[1]}* will expire in 5 minutes!`;
-          robot.messageRoom('#badminton-bot-tester', reminderMessage);
+          robot.messageRoom('#badminton', reminderMessage);
           courts[court].expiryNotificationSent = true;
         }
       }
