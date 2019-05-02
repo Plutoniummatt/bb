@@ -20,12 +20,13 @@ moment.relativeTimeThreshold('m', 50);
 const { COURTS_REDIS_KEY } = require('./common/constants');
 const COURT_DURATION = 45; // minutes
 
-function humanizeCourtWithPlayers(courtNumber, args) {
+function humanizeCourtWithPlayers(courtNumber, args, randoms = false) {
   const players = args.slice(0);
   const lastPlayer = players.pop();
   const playerDescription = `\`${players.join(`\`, \``)}\` and \`${lastPlayer}\``;
-  // Court 24 reserved with players “mattp” and “jonchay” starting in 42 minutes
-  return `Court \`${courtNumber}\` reserved with players ${playerDescription}`;
+  return randoms
+    ? `Court \`${courtNumber}\` reserved with randoms`
+    : `Court \`${courtNumber}\` reserved with players ${playerDescription}`;
 }
 
 function parseMatches(matches) {
@@ -63,7 +64,7 @@ function setAllCourts(robot, court) {
 // group A 23
 // group B 10 # 23 + 45 + 10
 
-function addCourt(robot, number, players, randoms, delayTime = 0) {
+function addCourt(robot, number, players, randoms = false, delayTime = 0) {
   const courts = getAllCourts(robot);
   const courtKey = `court_${number}`;
   courts[courtKey] = courts[courtKey] || [];
@@ -77,7 +78,7 @@ function addCourt(robot, number, players, randoms, delayTime = 0) {
   const startAt = moment(lastCourt.startAt).add(postponeStart, 'minutes');
 
   const courtQueue = {
-    players,
+    players: randoms ? [] : players,
     randoms,
     startAt
   }
@@ -96,8 +97,8 @@ module.exports = robot => {
       delayTime
     } = parseMatches(res.match);
 
-    if (players.length === 1) {
-      res.send('You must sign up a court with more than one player');
+    if (players.length === 1 && players[0] !== 'randoms') {
+      res.reply('You must sign up a court with more than one player');
       return;
     }
 
@@ -105,12 +106,12 @@ module.exports = robot => {
       robot,
       courtNumber,
       players,
-      false,
+      players[0] === 'randoms',
       delayTime
     );
 
-    const courtDescription = humanizeCourtWithPlayers(courtNumber, players);
-    const fromNowDescription = ` starting ${moment(newCourt.startAt).fromNow()}`;
+    const courtDescription = humanizeCourtWithPlayers(courtNumber, players, newCourt.randoms);
+    const fromNowDescription = `starting ${moment(newCourt.startAt).fromNow()}`;
     res.send(`${courtDescription} ${fromNowDescription}`);
   });
 
