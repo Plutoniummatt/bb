@@ -165,7 +165,15 @@ module.exports = robot => {
         continue;
       }
 
-      const playableRightNow = courtQueue[0].randoms ? ':x:' : ':white_check_mark:';
+      let playableRightNow;
+      if (courtQueue[0].randoms) {
+        playableRightNow = ':x:';
+      } else {
+        playableRightNow = moment().isAfter(courtQueue[0].startAt)
+          ? ':white_check_mark:'
+          : ':x:';
+      }
+
       allCourtsDescription += `*Court ${courtKey.split('_')[1]}* ${playableRightNow}`;
 
       courtQueue.forEach(queue => {
