@@ -160,11 +160,6 @@ module.exports = robot => {
     const courts = getAllCourts(robot);
     let allCourtsDescription = '';
 
-    if (!Object.keys(courts).length) {
-      allCourtsDescription += `\n\n*We have no courts! Sign up a court and add it via:*`;
-      allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
-    }
-
     for (const [courtKey, courtQueue] of Object.entries(courts)) {
       if (courtQueue.length === 0 || (courtQueue.length === 1 && courtQueue[0].randoms)) {
         continue;
@@ -186,6 +181,11 @@ module.exports = robot => {
       });
       allCourtsDescription += `\n\n`;
     };
+
+    if (allCourtsDescription === '') {
+      allCourtsDescription += `\n\n*We have no courts! Sign up a court and add it via:*`;
+      allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
+    }
 
     res.send(`Beep boop... gathering court status...`);
     res.send(allCourtsDescription);
