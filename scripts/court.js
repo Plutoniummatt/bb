@@ -18,7 +18,7 @@ moment.relativeTimeThreshold('m', 50);
 //   <optional notes required for the script>
 
 const { COURTS_REDIS_KEY } = require('./common/constants');
-const { sessionStarted, playerExists } = require('./common/functions');
+const { sessionStarted, playerExists, getPlayerSignupStatuses } = require('./common/functions');
 const COURT_DURATION = 45; // minutes
 
 function humanizePlayers(players) {
@@ -112,10 +112,15 @@ module.exports = robot => {
         return;
       }
 
+      const signupStatus = getPlayerSignupStatuses(robot);
       for (let player in players) {
         const playerName = players[player];
         if (!playerExists(playerName, robot)) {
           res.reply(`:x: Who is this ${playerName} person?? did you forget to \`bb pw ${playerName} {password}\`?`);
+          return;
+        }
+        if (signupStatus[playerName]) {
+         res.reply(`:x: ${playerName} is already signed up on Court ${signupStatus[playerName].split('_')[1]}`);
           return;
         }
       }

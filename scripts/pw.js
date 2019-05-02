@@ -9,7 +9,7 @@
  * }
  */
 const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY } = require('./common/constants');
-const { sessionStarted, playerExists } = require('./common/functions');
+const { sessionStarted, playerExists, getPlayerSignupStatuses } = require('./common/functions');
 const ZODIAC = [
   'mouse',
   'ox',
@@ -25,23 +25,6 @@ const ZODIAC = [
   'pig',
   'cat'
 ];
-
-function getPlayerSignupStatuses(robot) {
-  const courts = robot.brain.get(COURTS_REDIS_KEY);
-  if (courts) {
-    playerStatuses = {};
-    for (let court in courts) {
-      courts[court].forEach(reservation => {
-        reservation.players.forEach(player => {
-          playerStatuses[player] = court;
-        });
-      });
-    }
-    return playerStatuses;
-  } else {
-    return {};
-  }
-}
 
 module.exports = robot => {
   // bb pw mattp monkey
@@ -68,15 +51,18 @@ module.exports = robot => {
 
     const players = robot.brain.get(PLAYERS_REDIS_KEY);
     if (players) {
-      players[username] = { password };
+      players[username] = {
+        password,
+        slackId: `<@${res.envelope.user.id}>`
+      };
     } else {
       robot.brain.set(PLAYERS_REDIS_KEY, {
         [username]: {
-          password
+          password,
+          slackId: `<@${res.envelope.user.id}>`
         }
       });
     }
-
     res.reply(`:white_check_mark: Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
   });
 
