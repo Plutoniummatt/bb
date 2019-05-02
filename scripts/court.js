@@ -98,7 +98,7 @@ function removeCourt(robot, number) {
 
 module.exports = robot => {
   // bab ct|court|crt <court_number> <names>... <delay_time>
-  robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/i, res => {
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d].+)/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
     }
