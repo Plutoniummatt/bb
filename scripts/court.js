@@ -161,7 +161,7 @@ module.exports = robot => {
     let allCourtsDescription = '';
 
     for (const [courtKey, courtQueue] of Object.entries(courts)) {
-      if (courtQueue.length === 0 || (courtQueue.length === 1 && courtQueue[0].randoms)) {
+      if (courtQueue.length === 0 || courtQueue.length === 1) {
         continue;
       }
 
