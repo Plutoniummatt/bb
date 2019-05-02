@@ -20,13 +20,16 @@ moment.relativeTimeThreshold('m', 50);
 const { COURTS_REDIS_KEY } = require('./common/constants');
 const COURT_DURATION = 45; // minutes
 
-function humanizeCourtWithPlayers(courtNumber, args, randoms = false) {
-  const players = args.slice(0);
-  const lastPlayer = players.pop();
-  const playerDescription = `\`${players.join(`\`, \``)}\` and \`${lastPlayer}\``;
+function humanizePlayers(players) {
+  const allPlayers = players.slice(0);
+  const lastPlayer = allPlayers.pop();
+  return `\`${allPlayers.join(`\`, \``)}\` and \`${lastPlayer}\``;
+}
+
+function humanizeCourtWithPlayers(courtNumber, players, randoms = false) {
   return randoms
     ? `Court \`${courtNumber}\` reserved with randoms`
-    : `Court \`${courtNumber}\` reserved with players ${playerDescription}`;
+    : `Court \`${courtNumber}\` reserved with players ${humanizePlayers(players)}`;
 }
 
 function parseMatches(matches) {
@@ -116,9 +119,39 @@ module.exports = robot => {
   });
 
   // bb ct|court|crt status
+
+  /**
+   * :badminton_racquet_and_shuttlecock: Court Status:
+    *Court 23*
+    `winnie`, `goo` playing now
+    Randoms playing in y minutes
+    `foo`, `bar` playing in x minutes
+
+    *Court 24*
+    `mattp`, `jon` playing now
+   */
   robot.respond(/\s+(?:ct|court|crt)\s+status$/i, res => {
     const courts = getAllCourts(robot);
+    let allCourtsDescription = ':badminton_racquet_and_shuttlecock: Court Status:*';
+
+    for (const [courtKey, courtQueue] of Object.entries(courts)) {
+      allCourtsDescription += `\n*Court ${courtKey.split('_')[1]}`;
+
+      courtQueue.forEach(queue => {
+        const timeDescription = moment().isAfter(queue.startAt)
+          ? 'now'
+          : moment(queue.startAt).fromNow();
+
+        const playingDescription = queue.randoms
+          ? `Randoms playing ${timeDescription}`
+          : `${humanizePlayers(queue.players)} playing ${timeDescription}`;
+
+        allCourtsDescription += `\n${playingDescription}`;
+      });
+      allCourtsDescription += `\n\n`;
+    };
+
     res.send(`Beep boop... gathering court status...`);
-    res.send(`\`\`\`${JSON.stringify(courts, null, 2)}\`\`\``);
+    res.send(allCourtsDescription);
   });
 };
