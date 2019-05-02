@@ -17,14 +17,29 @@ const moment = require("moment");
 
 const { COURTS_REDIS_KEY } = require('./common/constants');
 
-// {
-//   court_24: [{
-//     players: playerNames,
-//     randoms: true/false,
-//     startAt: ....
-//   },
-//   ],
-// }
+function humanizeCourtWithPlayers(courtNumber, args) {
+  const players = args.slice(0);
+  const lastPlayer = players.pop();
+  const playerDescription = `\`${players.join(`\`, \``)}\` and \`${lastPlayer}\``;
+  // Court 24 reserved with players “mattp” and “jonchay” starting in 42 minutes
+  return `Court \`${courtNumber}\` reserved with players ${playerDescription}`;
+}
+
+function parseMatches(matches) {
+  const courtNumber = matches[1];
+  const players = matches[2].split(' ').filter(Boolean);
+  const delayTime = parseInt(players[players.length - 1]);
+
+  if (!isNaN(delayTime)) {
+    players.pop();
+  }
+
+  return {
+    courtNumber,
+    players,
+    delayTime: isNaN(delayTime) ? null : delayTime
+  }
+}
 
 module.exports = robot => {
   function getAllCourts() {
@@ -52,36 +67,31 @@ module.exports = robot => {
 
   // bb ct|court|crt <court_number> <names>... <delay_time>
   robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/i, res => {
-    const courtNumber = res.match[1]
-    const args = res.match[2].split(' ').filter(Boolean);
-    const delayTime = parseInt(args[args.length - 1]);
-    let expiringTimeDescription = '';
+    const {
+      courtNumber,
+      players,
+      delayTime
+    } = parseMatches(res.match);
 
-    if (!isNaN(delayTime)) {
-      args.pop();
-      expiringTimeDescription = ` starting in ${delayTime} minutes`;
-    }
-
-    if (args.length === 1) {
+    if (players.length === 1) {
       res.send('You must sign up a court with more than one player');
       return;
     }
 
-    const lastPlayer = args.pop();
-    const playerDescription = `\`${args.join(`\`, \``)}\` and \`${lastPlayer}\``;
-    // Court 24 reserved with players “mattp” and “jonchay” starting in 42 minutes
-    let courtDescription = `Court \`${courtNumber}\` reserved with players ${playerDescription}`;
+    const courtDescription = humanizeCourtWithPlayers(courtNumber, players);
+    const expiringTimeDescription = delayTime === null
+      ? ''
+      : ` starting in ${delayTime} minutes`;
 
     addCourt(
       courtNumber,
-      [args, lastPlayer],
+      players,
       false,
-      !isNaN(delayTime) ? delayTime : 0
+      delayTime
     );
 
     const courts = getAllCourts();
     res.send(JSON.stringify(courts));
-
     res.send(`${courtDescription} ${expiringTimeDescription}`);
   });
 
