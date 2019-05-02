@@ -153,6 +153,11 @@ module.exports = robot => {
     const courts = getAllCourts(robot);
     let allCourtsDescription = '';
 
+    if (!Object.keys(courts).length) {
+      allCourtsDescription += `\n\n*We have no courts! Sign up a court and add it via:*`;
+      allCourtsDescription += `\n\`\`\`bb ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
+    }
+
     for (const [courtKey, courtQueue] of Object.entries(courts)) {
       if (courtQueue.length === 1 && courtQueue[0].randoms) {
         continue;
