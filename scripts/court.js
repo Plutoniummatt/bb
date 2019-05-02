@@ -18,6 +18,7 @@ moment.relativeTimeThreshold('m', 50);
 //   <optional notes required for the script>
 
 const { COURTS_REDIS_KEY } = require('./common/constants');
+const { sessionStarted, playerExists } = require('./common/functions');
 const COURT_DURATION = 45; // minutes
 
 function humanizePlayers(players) {
@@ -94,14 +95,23 @@ function addCourt(robot, number, players, randoms = false, delayTime = 0) {
 module.exports = robot => {
   // bb ct|court|crt <court_number> <names>... <delay_time>
   robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
     const {
       courtNumber,
       players,
       delayTime
     } = parseMatches(res.match);
 
+    players.forEach(player => {
+      if (!playerExists(player, robot)) {
+        res.reply(`:x: Who is this ${player} person?? did you forget to \`bb pw ${player} {password}\`?`);
+      }
+    });
+
     if (players.length === 1 && players[0] !== 'randoms') {
-      res.reply('You must sign up a court with more than one player');
+      res.reply(':x: You must sign up a court with more than one player');
       return;
     }
 
@@ -131,6 +141,9 @@ module.exports = robot => {
     `mattp`, `jon` playing now
    */
   robot.respond(/\s+(?:ct|court|crt)\s+status$/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
     const courts = getAllCourts(robot);
     let allCourtsDescription = ':badminton_racquet_and_shuttlecock: *Court Status:*';
 
