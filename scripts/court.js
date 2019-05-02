@@ -53,20 +53,10 @@ function getAllCourts(robot) {
   return robot.brain.get(COURTS_REDIS_KEY) || {};
 };
 
-function setAllCourts(robot, court) {
-  return robot.brain.set(COURTS_REDIS_KEY, court);
+function setAllCourts(robot, courts) {
+  return robot.brain.set(COURTS_REDIS_KEY, courts);
 }
 
-
-// group A 0
-// group B 0 # 0 + 45 mins
-// group C 45 # 45 + 45 mins
-
-// group A 23
-// group B 0 # 23 + 45
-
-// group A 23
-// group B 10 # 23 + 45 + 10
 
 function addCourt(robot, number, players, randoms = false, delayTime = 0) {
   const courts = getAllCourts(robot);
@@ -91,6 +81,18 @@ function addCourt(robot, number, players, randoms = false, delayTime = 0) {
   setAllCourts(robot, courts);
   return courtQueue;
 };
+
+function removeCourt(robot, number) {
+  const courtKey = `court_${number}`;
+  const courts = getAllCourts(robot);
+
+  if (courts[courtKey] === undefined) {
+    return false;
+  }
+  delete courts[courtKey];
+  setAllCourts(robot, courts);
+  return true;
+}
 
 module.exports = robot => {
   // bb ct|court|crt <court_number> <names>... <delay_time>
@@ -171,5 +173,13 @@ module.exports = robot => {
 
     res.send(`Beep boop... gathering court status...`);
     res.send(allCourtsDescription);
+  });
+
+  robot.respond(/\s+(?:ct|court|crt)\s+(?:reset)\s+([\d]+)/i, res => {
+    res.send('hello');
+    const courtNumber = res.match[1];
+    removeCourt(robot, courtNumber)
+      ? res.send(`Ok! I will forget everything about Court ${courtNumber}`)
+      : res.send('Court does not exist, perhaps a different court?');
   });
 };
