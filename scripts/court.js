@@ -135,6 +135,10 @@ module.exports = robot => {
     let allCourtsDescription = ':badminton_racquet_and_shuttlecock: *Court Status:*';
 
     for (const [courtKey, courtQueue] of Object.entries(courts)) {
+      if (courtQueue.length === 1 && courtQueue[0].randoms) {
+        continue;
+      }
+
       allCourtsDescription += `\n*Court ${courtKey.split('_')[1]}*`;
 
       courtQueue.forEach(queue => {
