@@ -12,7 +12,7 @@ moment.relativeTimeThreshold('m', 50);
 //   LIST_OF_ENV_VARS_TO_SET
 //
 // Commands:
-//   bb ct|court|crt <court_number> <name>.... <delay_time> - Register the court number with the player names
+//   bab ct|court|crt <court_number> <name>.... <delay_time> - Register the court number with the player names
 //
 // Notes:
 //   <optional notes required for the script>
@@ -95,7 +95,7 @@ function removeCourt(robot, number) {
 }
 
 module.exports = robot => {
-  // bb ct|court|crt <court_number> <names>... <delay_time>
+  // bab ct|court|crt <court_number> <names>... <delay_time>
   robot.respond(/\s+(?:ct|court|crt)\s+(\d*)\s+([\w\d].*)/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
@@ -116,7 +116,7 @@ module.exports = robot => {
       for (let player in players) {
         const playerName = players[player];
         if (!playerExists(playerName, robot)) {
-          res.reply(`:x: Who is this ${playerName} person?? did you forget to \`bb pw ${playerName} {password}\`?`);
+          res.reply(`:x: Who is this ${playerName} person?? did you forget to \`bab pw ${playerName} {password}\`?`);
           return;
         }
         if (signupStatus[playerName]) {
@@ -139,7 +139,7 @@ module.exports = robot => {
     res.send(`:white_check_mark: ${courtDescription} ${fromNowDescription}`);
   });
 
-  // bb ct|court|crt status
+  // bab ct|court|crt status
 
   /**
    * :badminton_racquet_and_shuttlecock: Court Status:
@@ -160,7 +160,7 @@ module.exports = robot => {
 
     if (!Object.keys(courts).length) {
       allCourtsDescription += `\n\n*We have no courts! Sign up a court and add it via:*`;
-      allCourtsDescription += `\n\`\`\`bb ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
+      allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
     }
 
     for (const [courtKey, courtQueue] of Object.entries(courts)) {

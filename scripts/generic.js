@@ -57,7 +57,7 @@ function periodicCourtTask(robot) {
 }
 
 module.exports = robot => {
-  // bb start
+  // bab start
   robot.respond(/\s+start$/i, res => {
     monitor = courtMonitor(robot);
     if (robot.brain.get(SESSION_REDIS_KEY)) {
@@ -70,7 +70,7 @@ module.exports = robot => {
     }
   });
 
-  // bb stop
+  // bab stop
   robot.respond(/\s+stop$/i, res => {
     const session = robot.brain.get(SESSION_REDIS_KEY);
     if (session) {

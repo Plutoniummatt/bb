@@ -4,7 +4,7 @@ module.exports = {
   sessionStarted: function(res, robot) {
     const session = robot.brain.get(SESSION_REDIS_KEY);
     if (!session) {
-      res.send('Please start a Badminton session with `bb start`');
+      res.send('Please start a Badminton session with `bab start`');
     }
     return Boolean(session);
   },

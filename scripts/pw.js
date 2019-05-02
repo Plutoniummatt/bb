@@ -27,7 +27,7 @@ const ZODIAC = [
 ];
 
 module.exports = robot => {
-  // bb pw mattp monkey
+  // bab pw mattp monkey
   robot.respond(/\s+pw\s+([a-zA-Z]+)\s+([a-zA-Z]+)/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
@@ -40,7 +40,7 @@ module.exports = robot => {
       return;
     }
     if (playerExists(username, robot)) {
-      res.reply(`:x: \`${username}\` is already signed up, you can do \`bb pw remove ${username}\``);
+      res.reply(`:x: \`${username}\` is already signed up, you can do \`bab pw remove ${username}\``);
       return;
     }
     if (!ZODIAC.includes(password)) {
@@ -66,7 +66,7 @@ module.exports = robot => {
     res.reply(`:white_check_mark: Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
   });
 
-  // bb pw
+  // bab pw
   robot.respond(/\s+pw$/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
@@ -95,7 +95,7 @@ module.exports = robot => {
     }
   });
 
-  // bb pw remove mattp
+  // bab pw remove mattp
   robot.respond(/\s+pw\s+remove\s+([a-zA-Z]+)/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
