@@ -50,9 +50,8 @@ function periodicCourtTask(robot) {
       if (moment().isAfter(moment(firstSession.startAt).add(44, 'minutes'))) {
         courts[court] = courts[court].slice(1);
       }
-
-      robot.brain.set(COURTS_REDIS_KEY, courts);
     }
+    robot.brain.set(COURTS_REDIS_KEY, courts);
   }
 }
 
