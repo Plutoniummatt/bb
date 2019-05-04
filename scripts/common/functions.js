@@ -1,3 +1,4 @@
+const moment = require("moment");
 const { SESSION_REDIS_KEY, PLAYERS_REDIS_KEY, COURTS_REDIS_KEY } = require('./constants');
 
 module.exports = {
@@ -32,5 +33,25 @@ module.exports = {
     } else {
       return {};
     }
+  },
+
+  getAllCourts: function(robot) {
+    const courts = robot.brain.get(COURTS_REDIS_KEY);
+    for (let court in courts) {
+      courts[court].forEach(signup => {
+        signup.startAt = moment(signup.startAt);
+      });
+    }
+    return courts || {};
+  },
+
+  setAllCourts: function(robot, courts) {
+    for (let court in courts) {
+      courts[court].forEach(signup => {
+        signup.startAt = signup.startAt.valueOf();
+      });
+    }
+    console.log(courts);
+    return robot.brain.set(COURTS_REDIS_KEY, courts);
   }
 };

@@ -14,19 +14,17 @@
 // Notes:
 //   <optional notes required for the script>
 const moment = require("moment");
-const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY, SESSION_REDIS_KEY } = require('./common/constants');
+const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY, SESSION_REDIS_KEY, COURT_DURATION } = require('./common/constants');
+const { getAllCourts, setAllCourts } = require('./common/functions');
 
 function reset(robot) {
   robot.brain.set(SESSION_REDIS_KEY, null);
   robot.brain.set(PLAYERS_REDIS_KEY, null);
   robot.brain.set(COURTS_REDIS_KEY, null);
-  if (monitor) {
-    clearInterval(monitor);
-  }
 }
 
 let monitor;
-function courtMonitor(robot) {
+function startCourtMonitor(robot) {
   // Every minute
   return setInterval(() => {
     periodicCourtTask(robot);
@@ -34,51 +32,71 @@ function courtMonitor(robot) {
 }
 
 function periodicCourtTask(robot) {
-  const courts = robot.brain.get(COURTS_REDIS_KEY);
-  const players = robot.brain.get(PLAYERS_REDIS_KEY);
+  const courts = getAllCourts(robot);
+  const allPlayers = robot.brain.get(PLAYERS_REDIS_KEY);
 
-  if (courts && players) {
+  if (courts && allPlayers) {
     let playerIds = new Set();
-    for (let player in players) {
-      playerIds.add(players[player].slackId);
+    for (let player in allPlayers) {
+      playerIds.add(allPlayers[player].slackId);
     }
-    let reminderMessage = `${Array.from(playerIds.values()).join(' ')}\n`;
+    const players = `${Array.from(playerIds.values()).join(' ')}\n`;
+    const newCourts = [];
+    const expiringCourts = [];
 
     for (let court in courts) {
-      const firstSession = courts[court][0];
-      if (!courts[court].startNotificationSent && !firstSession.randoms) {
+      const queue = courts[court];
+      const firstSession = queue[0];
+
+      if (!firstSession) {
+        continue;
+      }
+
+      if (!firstSession.startNotificationSent && !firstSession.randoms) {
         if (moment().isAfter(moment(firstSession.startAt))) {
-          reminderMessage = reminderMessage + `:white_check_mark: *Court ${court.split('_')[1]}* is ours!`;
-          robot.messageRoom('#badminton', reminderMessage);
-          courts[court].startNotificationSent = true;
+          newCourts.push(court.split('_')[1]);
+          firstSession.startNotificationSent = true;
         }
       }
 
-      if (!courts[court].expiryNotificationSent && !firstSession.randoms) {
-        if (moment().isAfter(moment(firstSession.startAt).add(40, 'minutes'))) {
-          reminderMessage = reminderMessage + `:warning: One of our reservations for *Court ${court.split('_')[1]}* will expire in 5 minutes!`;
-          robot.messageRoom('#badminton', reminderMessage);
-          courts[court].expiryNotificationSent = true;
+      if (!firstSession.expiryNotificationSent && !firstSession.randoms) {
+        if (queue.length === 1 || queue[1].randoms) {
+          if (moment().isAfter(moment(firstSession.startAt).add(COURT_DURATION - 5, 'minutes'))) {
+            expiringCourts.push(court.split('_')[1]);
+            firstSession.expiryNotificationSent = true;
+          }
         }
       }
 
-      if (moment().isAfter(moment(firstSession.startAt).add(44, 'minutes'))) {
-        courts[court] = courts[court].slice(1);
+      if (moment().isAfter(moment(firstSession.startAt).add(COURT_DURATION - 1, 'minutes'))) {
+        courts[court] = queue.slice(1);
       }
     }
-    robot.brain.set(COURTS_REDIS_KEY, courts);
+
+    if (newCourts.length > 0 || expiringCourts.length > 0) {
+      let message = players + '\n';
+      if (newCourts.length > 0) {
+        message = message + `:white_check_mark: We now have courts ${newCourts.join(',')}\n`;
+      }
+      if (expiringCourts.length > 0) {
+        message = message + `:warning: Courts ${expiringCourts.join(',')} are expring in 5 minutes`;
+      }
+      robot.messageRoom('#badminton', message);
+    }
+    setAllCourts(robot, courts);
   }
 }
 
 module.exports = robot => {
+  monitor = startCourtMonitor(robot);
+
   // bab start
   robot.respond(/\s+start$/i, res => {
-    monitor = courtMonitor(robot);
     if (robot.brain.get(SESSION_REDIS_KEY)) {
       res.send("People are already playing! Get on with it.");
     } else {
       robot.brain.set(SESSION_REDIS_KEY, {
-        startTime: moment()
+        startTime: moment().valueOf()
       });
       res.send("Starting badminton session now. Enjoy!");
     }
@@ -89,7 +107,7 @@ module.exports = robot => {
     const session = robot.brain.get(SESSION_REDIS_KEY);
     if (session) {
       robot.brain.set(SESSION_REDIS_KEY, null);
-      const timePlayed = moment.duration(moment() - session.startTime).humanize();
+      const timePlayed = moment.duration(moment() - moment(session.startTime)).humanize();
       reset(robot);
       res.send(`Ending badminton session. You’ve played for ${timePlayed}.`);
     } else {

@@ -17,9 +17,8 @@
 //   <optional notes required for the script>
 
 const moment = require("moment");
-const { COURTS_REDIS_KEY } = require('./common/constants');
-const { sessionStarted, playerExists, getPlayerSignupStatuses } = require('./common/functions');
-const COURT_DURATION = 45; // minutes
+const { COURTS_REDIS_KEY, COURT_DURATION } = require('./common/constants');
+const { sessionStarted, playerExists, getPlayerSignupStatuses, getAllCourts, setAllCourts } = require('./common/functions');
 // by default 45 minutes is considered "in an hour", increase the threshold
 moment.relativeTimeThreshold('m', 50);
 
@@ -37,7 +36,7 @@ function humanizeCourtWithPlayers(courtNumber, players, randoms = false) {
 
 function parseMatches(matches) {
   const courtNumber = matches[1];
-  const players = matches[2].split(' ').filter(Boolean);
+  const players = matches[2].split(' ').filter(Boolean).map(p => p.toLowerCase());
   const delayTime = parseInt(players[players.length - 1]);
 
   if (!isNaN(delayTime)) {
@@ -50,15 +49,6 @@ function parseMatches(matches) {
     delayTime: isNaN(delayTime) ? null : delayTime
   }
 }
-
-function getAllCourts(robot) {
-  return robot.brain.get(COURTS_REDIS_KEY) || {};
-};
-
-function setAllCourts(robot, courts) {
-  return robot.brain.set(COURTS_REDIS_KEY, courts);
-}
-
 
 function addCourt(robot, number, players, randoms = false, delayTime = 0) {
   const courts = getAllCourts(robot);
@@ -118,11 +108,11 @@ module.exports = robot => {
       for (let player in players) {
         const playerName = players[player];
         if (!playerExists(playerName, robot)) {
-          res.reply(`:x: Who is this ${playerName} person?? did you forget to \`bab pw ${playerName} {password}\`?`);
+          res.reply(`:x: Who is this \`${playerName}\` person?? did you forget to \`bab pw ${playerName} {password}\`?`);
           return;
         }
         if (signupStatus[playerName]) {
-         res.reply(`:x: ${playerName} is already signed up on Court ${signupStatus[playerName].split('_')[1]}`);
+         res.reply(`:x: \`${playerName}\` is already signed up on Court ${signupStatus[playerName].split('_')[1]}`);
           return;
         }
       }
@@ -178,7 +168,7 @@ module.exports = robot => {
 
       courtQueue.forEach(queue => {
         const timeDescription = moment().isAfter(queue.startAt)
-          ? 'now'
+          ? `now (expires ${moment(queue.startAt).add(COURT_DURATION, 'minutes').fromNow()})`
           : moment(queue.startAt).fromNow();
 
         const playingDescription = queue.randoms
@@ -195,8 +185,7 @@ module.exports = robot => {
       allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
     }
 
-    res.send(`Beep boop... gathering court status...`);
-    res.send(allCourtsDescription);
+    res.send(`Beep boop... gathering court status...\n${allCourtsDescription}`);
   });
 
   robot.respond(/\s+(?:ct|court|crt)\s+(?:reset)\s+([\d]+)/i, res => {

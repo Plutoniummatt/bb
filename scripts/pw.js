@@ -45,7 +45,7 @@ const ZODIAC = [
 
 module.exports = robot => {
   // bab pw mattp monkey
-  robot.respond(/\s+pw\s+([a-zA-Z]+)\s+([a-zA-Z]+)/i, res => {
+  robot.respond(/\s+pw\s+([a-zA-Z0-9]+)\s+([a-zA-Z]+)/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
     }
@@ -113,7 +113,7 @@ module.exports = robot => {
   });
 
   // bab pw remove mattp
-  robot.respond(/\s+pw\s+remove\s+([a-zA-Z]+)/i, res => {
+  robot.respond(/\s+pw\s+remove\s+([a-zA-Z0-9]+)/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
     }
