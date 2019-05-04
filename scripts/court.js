@@ -11,6 +11,7 @@
 //   *bab ct|court|crt* - Show status of all courts
 //   *bab ct|court|crt <court_number> <name>.... <delay_time>* - Register the court number with the player names
 //   *bab ct|court|crt <court_number> randoms <delay_time>* - Register the court number with randoms currently playing
+//   *bab ct|court|crt pop <court_number>* - Remove the first item in the queue for the specified court
 //   *bab ct|court|crt reset <court_number>* - Remove all queued groups from court number
 //
 // Notes:
@@ -37,11 +38,7 @@ function humanizeCourtWithPlayers(courtNumber, players, randoms = false) {
 function parseMatches(matches) {
   const courtNumber = matches[1];
   const players = matches[2].split(' ').filter(Boolean).map(p => p.toLowerCase());
-  const delayTime = parseInt(players[players.length - 1]);
-
-  if (!isNaN(delayTime)) {
-    players.pop();
-  }
+  const delayTime = matches[3];
 
   return {
     courtNumber,
@@ -50,7 +47,32 @@ function parseMatches(matches) {
   }
 }
 
-function addCourt(robot, number, players, randoms = false, delayTime = 0) {
+function addCourt(robot, res, number, players, randoms = false, delayTime = 0) {
+  if (players.length > 0) {
+    if (players.length === 1) {
+      res.reply(':x: You must sign up a court with more than one player');
+      return;
+    }
+
+    if (players.length > 4) {
+      res.reply(':x: You tried to sign up too many players');
+      return;
+    }
+
+    const signupStatus = getPlayerSignupStatuses(robot);
+    for (let player in players) {
+      const playerName = players[player];
+      if (!playerExists(playerName, robot)) {
+        res.reply(`:x: Who is this \`${playerName}\` person?? did you forget to \`bab pw ${playerName} {password}\`?`);
+        return;
+      }
+      if (signupStatus[playerName]) {
+       res.reply(`:x: \`${playerName}\` is already signed up on Court ${signupStatus[playerName].split('_')[1]}`);
+        return;
+      }
+    }
+  }
+
   const courts = getAllCourts(robot);
   const courtKey = `court_${number}`;
   courts[courtKey] = courts[courtKey] || [];
@@ -71,7 +93,10 @@ function addCourt(robot, number, players, randoms = false, delayTime = 0) {
 
   courts[courtKey].push(courtQueue);
   setAllCourts(robot, courts);
-  return courtQueue;
+
+  const courtDescription = humanizeCourtWithPlayers(number, players, courtQueue.randoms);
+  const fromNowDescription = `starting ${moment(courtQueue.startAt).fromNow()}`;
+  res.send(`:white_check_mark: ${courtDescription} ${fromNowDescription}`);
 };
 
 function removeCourt(robot, number) {
@@ -88,61 +113,49 @@ function removeCourt(robot, number) {
 
 module.exports = robot => {
   // bab ct|court|crt <court_number> <names>... <delay_time>
-  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d].+)/i, res => {
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d\s]+)\s+(\d+)$/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
     }
+
     const {
       courtNumber,
       players,
       delayTime
     } = parseMatches(res.match);
 
-    if (players[0] !== 'randoms') {
-      if (players.length === 1) {
-        res.reply(':x: You must sign up a court with more than one player');
-        return;
-      }
-
-      const signupStatus = getPlayerSignupStatuses(robot);
-      for (let player in players) {
-        const playerName = players[player];
-        if (!playerExists(playerName, robot)) {
-          res.reply(`:x: Who is this \`${playerName}\` person?? did you forget to \`bab pw ${playerName} {password}\`?`);
-          return;
-        }
-        if (signupStatus[playerName]) {
-         res.reply(`:x: \`${playerName}\` is already signed up on Court ${signupStatus[playerName].split('_')[1]}`);
-          return;
-        }
-      }
-    }
-
-    const newCourt = addCourt(
+    addCourt(
       robot,
+      res,
       courtNumber,
       players,
-      players[0] === 'randoms',
+      false,
       delayTime
     );
-
-    const courtDescription = humanizeCourtWithPlayers(courtNumber, players, newCourt.randoms);
-    const fromNowDescription = `starting ${moment(newCourt.startAt).fromNow()}`;
-    res.send(`:white_check_mark: ${courtDescription} ${fromNowDescription}`);
   });
 
-  // bab ct|court|crt status
+  // bab ct|court|crt <court_number> <names>...
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d\s]+)$/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
 
-  /**
-   * :badminton_racquet_and_shuttlecock: Court Status:
-    *Court 23*
-    `winnie`, `goo` playing now
-    Randoms playing in y minutes
-    `foo`, `bar` playing in x minutes
+    const {
+      courtNumber,
+      players,
+      delayTime
+    } = parseMatches(res.match);
 
-    *Court 24*
-    `mattp`, `jon` playing now
-   */
+    addCourt(
+      robot,
+      res,
+      courtNumber,
+      players,
+      false
+    );
+  });
+
+  // bab ct|court|crt
   robot.respond(/\s+(?:ct|court|crt)$/i, res => {
     if (!sessionStarted(res, robot)) {
       return;
@@ -185,11 +198,36 @@ module.exports = robot => {
       allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
     }
 
-    res.send(`Beep boop... gathering court status...\n${allCourtsDescription}`);
+    res.send(allCourtsDescription);
   });
 
-  robot.respond(/\s+(?:ct|court|crt)\s+(?:reset)\s+([\d]+)/i, res => {
-    res.send('hello');
+  // bab ct|court|crt <court_number> pop
+  robot.respond(/\s+(?:ct|court|crt)\s+pop\s+(\d+)$/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
+    const courtNumber = res.match[1];
+    const courtKey = `court_${courtNumber}`;
+    const courts = getAllCourts(robot);
+
+    if (courts[courtKey]) {
+      const removed = courts[courtKey].shift();
+      const timeRemaining = moment(removed.startAt).add(COURT_DURATION, 'minutes').valueOf() - moment().valueOf();
+      courts[courtKey].forEach(reservation => {
+        reservation.startAt = moment(moment(reservation.startAt).valueOf() - timeRemaining);
+      });
+      setAllCourts(robot, courts);
+      res.send(`:white_check_mark: I've popped the first session off the queue for court ${courtNumber}`);
+    } else {
+      res.send(`:x: Are you sure court ${courtNumber} is signed up?`);
+    }
+  });
+
+  // bab ct|court|crt reset <court_number>
+  robot.respond(/\s+(?:ct|court|crt)\s+(?:reset)\s+([\d]+)$/i, res => {
+    if (!sessionStarted(res, robot)) {
+      return;
+    }
     const courtNumber = res.match[1];
     removeCourt(robot, courtNumber)
       ? res.send(`Ok! I will forget everything about Court ${courtNumber}`)

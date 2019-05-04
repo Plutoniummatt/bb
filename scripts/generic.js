@@ -96,7 +96,8 @@ module.exports = robot => {
       res.send("People are already playing! Get on with it.");
     } else {
       robot.brain.set(SESSION_REDIS_KEY, {
-        startTime: moment().valueOf()
+        startTime: moment().valueOf(),
+        room: res.message.room
       });
       res.send("Starting badminton session now. Enjoy!");
     }

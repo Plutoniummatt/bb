@@ -51,7 +51,6 @@ module.exports = {
         signup.startAt = signup.startAt.valueOf();
       });
     }
-    console.log(courts);
     return robot.brain.set(COURTS_REDIS_KEY, courts);
   }
 };
