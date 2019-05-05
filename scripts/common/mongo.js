@@ -4,6 +4,7 @@ const moment = require("moment");
 const BRAIN = 'brain';
 const SESSIONS = 'sessions';
 const PLAYERS = 'players';
+const MEMBERS = 'members';
 const RESERVATIONS = 'reservations';
 
 let database;
@@ -19,6 +20,7 @@ module.exports = {
 
       database = db;
       database.createCollection(SESSIONS);
+      database.createCollection(MEMBERS);
       database.createCollection(PLAYERS);
       database.createCollection(RESERVATIONS);
     });
@@ -29,6 +31,23 @@ module.exports = {
     database.collection(SESSIONS).deleteMany();
     database.collection(PLAYERS).deleteMany();
     database.collection(RESERVATIONS).deleteMany();
+  },
+
+  deleteMember: function(slackId) {
+    return database.collection(MEMBERS).deleteOne({
+      slackId
+    });
+  },
+
+  newMember: function(slackId, playerName) {
+    return database.collection(MEMBERS).insertOne({
+      slackId,
+      playerName
+    });
+  },
+
+  getMembers: function(query) {
+    return database.collection(MEMBERS).find(query);
   },
 
   getSession: function() {
