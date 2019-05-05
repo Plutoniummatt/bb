@@ -18,10 +18,9 @@
 //   <optional notes required for the script>
 
 const moment = require("moment");
-const { COURTS_REDIS_KEY, COURT_DURATION } = require('./common/constants');
-const { sessionStarted, playerExists, getPlayerSignupStatuses, getAllCourts, setAllCourts } = require('./common/functions');
-// by default 45 minutes is considered "in an hour", increase the threshold
-moment.relativeTimeThreshold('m', 50);
+const { COURT_DURATION } = require('./common/constants');
+const { sessionStarted } = require('./common/functions');
+const { getReservations, newReservation, deleteReservations, updateReservations, getPlayers } = require('./common/mongo');
 
 function humanizePlayers(players) {
   const allPlayers = players.slice(0);
@@ -48,7 +47,7 @@ function parseMatches(matches) {
 }
 
 function addCourt(robot, res, number, players, randoms = false, delayTime = 0) {
-  if (players.length > 0) {
+  if (players.length > 0 || randoms) {
     if (players.length === 1) {
       res.reply(':x: You must sign up a court with more than one player');
       return;
@@ -59,178 +58,225 @@ function addCourt(robot, res, number, players, randoms = false, delayTime = 0) {
       return;
     }
 
-    const signupStatus = getPlayerSignupStatuses(robot);
-    for (let player in players) {
-      const playerName = players[player];
-      if (!playerExists(playerName, robot)) {
-        res.reply(`:x: Who is this \`${playerName}\` person?? did you forget to \`bab pw ${playerName} {password}\`?`);
-        return;
-      }
-      if (signupStatus[playerName]) {
-       res.reply(`:x: \`${playerName}\` is already signed up on Court ${signupStatus[playerName].split('_')[1]}`);
-        return;
-      }
-    }
+    getReservations().toArray((err, reservations) => {
+      getPlayers().toArray((err, existingPlayers) => {
+        let skip = false;
+        if (!randoms) {
+          players.forEach(player => {
+            if (!existingPlayers.map(p => p.name).includes(player)) {
+              res.reply(`:x: Who is this \`${player}\` person?? did you forget to \`bab pw ${player} {password}\`?`);
+              skip = true;
+            }
+          });
+
+          reservations.forEach(reservation => {
+            reservation.players.forEach(player => {
+              if (players.includes(player)) {
+                res.reply(`:x: \`${player}\` is already signed up on Court ${reservation.courtNumber}`);
+                skip = true;
+              }
+            });
+          });
+        }
+
+        if (!skip) {
+          getReservations({
+            courtNumber: Number(number)
+          }).sort({ startAt: 1 }).toArray((err, reservations) => {
+            let postponeStart = Number(delayTime);
+            let startAt = moment().add(postponeStart, 'minutes');
+
+            if (reservations.length > 0) {
+              postponeStart = Number(delayTime) + COURT_DURATION;
+              startAt = moment(reservations.pop().startAt).add(postponeStart, 'minutes');
+            }
+
+            newReservation(
+              number,
+              randoms
+                ? []
+                : players,
+              startAt.valueOf(),
+              randoms
+            );
+
+            const courtDescription = humanizeCourtWithPlayers(number, players, randoms);
+            const fromNowDescription = `starting ${moment(startAt).fromNow()}`;
+            res.send(`:white_check_mark: ${courtDescription} ${fromNowDescription}`);
+          });
+        }
+      });
+    });
   }
-
-  const courts = getAllCourts(robot);
-  const courtKey = `court_${number}`;
-  courts[courtKey] = courts[courtKey] || [];
-  const existingQueue = courts[courtKey];
-  const lastCourt = existingQueue[existingQueue.length - 1] || {};
-
-  const postponeStart = lastCourt.startAt
-    ? (COURT_DURATION + delayTime)
-    : delayTime;
-
-  const startAt = moment(lastCourt.startAt).add(postponeStart, 'minutes');
-
-  const courtQueue = {
-    players: randoms ? [] : players,
-    randoms,
-    startAt
-  }
-
-  courts[courtKey].push(courtQueue);
-  setAllCourts(robot, courts);
-
-  const courtDescription = humanizeCourtWithPlayers(number, players, courtQueue.randoms);
-  const fromNowDescription = `starting ${moment(courtQueue.startAt).fromNow()}`;
-  res.send(`:white_check_mark: ${courtDescription} ${fromNowDescription}`);
 };
 
-function removeCourt(robot, number) {
-  const courtKey = `court_${number}`;
-  const courts = getAllCourts(robot);
-
-  if (courts[courtKey] === undefined) {
-    return false;
-  }
-  delete courts[courtKey];
-  setAllCourts(robot, courts);
-  return true;
-}
-
 module.exports = robot => {
+  // by default 45 minutes is considered "in an hour", increase the threshold
+  moment.relativeTimeThreshold('m', 50);
+
   // bab ct|court|crt <court_number> <names>... <delay_time>
-  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d\s]+)\s+(\d+)$/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d\s]+)\s+([\d\-]+)$/i, res => {
+    sessionStarted(res).then(started => {
+      if (started) {
+        const {
+          courtNumber,
+          players,
+          delayTime
+        } = parseMatches(res.match);
 
-    const {
-      courtNumber,
-      players,
-      delayTime
-    } = parseMatches(res.match);
-
-    addCourt(
-      robot,
-      res,
-      courtNumber,
-      players,
-      false,
-      delayTime
-    );
+        if (!players.includes('randoms')) {
+          addCourt(
+            robot,
+            res,
+            courtNumber,
+            players,
+            false,
+            delayTime
+          );
+        }
+      }
+    });
   });
 
   // bab ct|court|crt <court_number> <names>...
   robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+([\w\d\s]+)$/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
+    sessionStarted(res).then(started => {
+      if (started) {
+        const {
+          courtNumber,
+          players,
+          delayTime
+        } = parseMatches(res.match);
 
-    const {
-      courtNumber,
-      players,
-      delayTime
-    } = parseMatches(res.match);
+        if (!players.includes('randoms')) {
+          addCourt(
+            robot,
+            res,
+            courtNumber,
+            players,
+            false
+          );
+        }
+      }
+    });
+  });
 
-    addCourt(
-      robot,
-      res,
-      courtNumber,
-      players,
-      false
-    );
+  // bab ct|court|crt <court_number> randoms <delay_time>
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+randoms\s+([\d\-]+)$/i, res => {
+    sessionStarted(res).then(started => {
+      if (started) {
+        const courtNumber = res.match[1];
+        const delayTime = res.match[2];
+
+        addCourt(
+          robot,
+          res,
+          courtNumber,
+          [],
+          true,
+          Number(delayTime)
+        );
+      }
+    });
+  });
+
+  // bab ct|court|crt <court_number> randoms
+  robot.respond(/\s+(?:ct|court|crt)\s+(\d+)\s+randoms$/i, res => {
+    sessionStarted(res).then(started => {
+      if (started) {
+        const courtNumber = res.match[1];
+
+        addCourt(
+          robot,
+          res,
+          courtNumber,
+          [],
+          true
+        );
+      }
+    });
   });
 
   // bab ct|court|crt
   robot.respond(/\s+(?:ct|court|crt)$/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
-    const courts = getAllCourts(robot);
-    let allCourtsDescription = '';
+    sessionStarted(res).then(started => {
+      if (started) {
+        const reservationsByCourtNumber = {};
+        getReservations().sort({ startAt: 1 }).toArray((err, reservations) => {
+          reservations.forEach(reservation => {
+            if (reservationsByCourtNumber[reservation.courtNumber]) {
+              reservationsByCourtNumber[reservation.courtNumber].push(reservation);
+            } else {
+              reservationsByCourtNumber[reservation.courtNumber] = [reservation];
+            }
+          });
 
-    for (const [courtKey, courtQueue] of Object.entries(courts)) {
-      if (courtQueue.length === 0) {
-        continue;
+          let allCourtsDescription = '';
+          for (const [courtNumber, reservations] of Object.entries(reservationsByCourtNumber)) {
+            const playableRightNow = !reservations[0].randoms;
+            allCourtsDescription += `\n*Court ${courtNumber}* ${playableRightNow ? ':white_check_mark:' : ':x:'}`;
+            reservations.forEach(reservation => {
+              const timeDescription = moment().isAfter(reservation.startAt)
+                ? `now (expires ${moment(reservation.startAt).add(COURT_DURATION, 'minutes').fromNow()})`
+                : moment(reservation.startAt).fromNow();
+
+              const playingDescription = reservation.randoms
+                ? `playing *${timeDescription}* (Randoms)`
+                : `playing *${timeDescription}* (${humanizePlayers(reservation.players)})`;
+
+              allCourtsDescription += `\n${playingDescription}`;
+            });
+          }
+
+          if (allCourtsDescription === '') {
+            allCourtsDescription += `\n\n*We have no courts! Sign up a court and add it via:*`;
+            allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
+          }
+
+          res.send(allCourtsDescription);
+        });
       }
-
-      let playableRightNow;
-      if (courtQueue[0].randoms) {
-        playableRightNow = ':x:';
-      } else {
-        playableRightNow = moment().isAfter(courtQueue[0].startAt)
-          ? ':white_check_mark:'
-          : ':x:';
-      }
-
-      allCourtsDescription += `*Court ${courtKey.split('_')[1]}* ${playableRightNow}`;
-
-      courtQueue.forEach(queue => {
-        const timeDescription = moment().isAfter(queue.startAt)
-          ? `now (expires ${moment(queue.startAt).add(COURT_DURATION, 'minutes').fromNow()})`
-          : moment(queue.startAt).fromNow();
-
-        const playingDescription = queue.randoms
-          ? `playing *${timeDescription}* (Randoms)`
-          : `playing *${timeDescription}* (${humanizePlayers(queue.players)})`;
-
-        allCourtsDescription += `\n${playingDescription}`;
-      });
-      allCourtsDescription += `\n\n`;
-    };
-
-    if (allCourtsDescription === '') {
-      allCourtsDescription += `\n\n*We have no courts! Sign up a court and add it via:*`;
-      allCourtsDescription += `\n\`\`\`bab ct <court_number> <player_1> <player_2>...<delay_time>\`\`\``;
-    }
-
-    res.send(allCourtsDescription);
+    });
   });
 
-  // bab ct|court|crt <court_number> pop
+  // bab ct|court|crt pop <court_number>
   robot.respond(/\s+(?:ct|court|crt)\s+pop\s+(\d+)$/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
-    const courtNumber = res.match[1];
-    const courtKey = `court_${courtNumber}`;
-    const courts = getAllCourts(robot);
-
-    if (courts[courtKey]) {
-      const removed = courts[courtKey].shift();
-      const timeRemaining = moment(removed.startAt).add(COURT_DURATION, 'minutes').valueOf() - moment().valueOf();
-      courts[courtKey].forEach(reservation => {
-        reservation.startAt = moment(moment(reservation.startAt).valueOf() - timeRemaining);
-      });
-      setAllCourts(robot, courts);
-      res.send(`:white_check_mark: I've popped the first session off the queue for court ${courtNumber}`);
-    } else {
-      res.send(`:x: Are you sure court ${courtNumber} is signed up?`);
-    }
+    sessionStarted(res).then(started => {
+      if (started) {
+        const courtNumber = res.match[1];
+        getReservations({ courtNumber: Number(courtNumber) }).sort({ startAt: 1 }).toArray((err, reservations) => {
+          if (reservations.length > 0) {
+            const timeLeft = moment(reservations[0].startAt).add(COURT_DURATION, 'minutes').valueOf() - moment().valueOf();
+            deleteReservations({ _id: reservations[0]._id }).then(result => {
+              reservations.shift();
+              reservations.forEach(reservation => {
+                updateReservations({ _id: reservation._id }, {
+                  $set: {
+                    startAt: reservation.startAt - timeLeft
+                  }
+                });
+              });
+              res.send(`:white_check_mark: I've popped the first session off the queue for court ${courtNumber}`);
+            });
+          } else {
+            res.send(`:x: Are you sure court ${courtNumber} is signed up?`);
+          }
+        });
+      }
+    })
   });
 
   // bab ct|court|crt reset <court_number>
   robot.respond(/\s+(?:ct|court|crt)\s+(?:reset)\s+([\d]+)$/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
-    const courtNumber = res.match[1];
-    removeCourt(robot, courtNumber)
-      ? res.send(`Ok! I will forget everything about Court ${courtNumber}`)
-      : res.send('Court does not exist, perhaps a different court?');
+    sessionStarted(res).then(started => {
+      if (started) {
+        const courtNumber = res.match[1];
+        deleteReservations({
+          courtNumber: Number(courtNumber)
+        }).then(result => {
+          res.send(`:white_check_mark: Ok! I will forget everything about Court ${courtNumber}`);
+        });
+      }
+    });
   });
 };

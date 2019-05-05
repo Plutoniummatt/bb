@@ -25,8 +25,8 @@
  *   }
  * }
  */
-const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY } = require('./common/constants');
-const { sessionStarted, playerExists, getPlayerSignupStatuses } = require('./common/functions');
+const { sessionStarted } = require('./common/functions');
+const { newPlayer, deletePlayer, getPlayers, getReservations } = require('./common/mongo');
 const ZODIAC = [
   'mouse',
   'ox',
@@ -46,95 +46,95 @@ const ZODIAC = [
 module.exports = robot => {
   // bab pw mattp monkey
   robot.respond(/\s+pw\s+([a-zA-Z0-9]+)\s+([a-zA-Z]+)/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
+    sessionStarted(res).then(started => {
+      if (started) {
+        const username = res.match[1].toLowerCase();
+        const password = res.match[2].toLowerCase();
 
-    const username = res.match[1].toLowerCase();
-    const password = res.match[2].toLowerCase();
-
-    if (username === 'remove') {
-      return;
-    }
-    if (playerExists(username, robot)) {
-      res.reply(`:x: \`${username}\` is already signed up, you can do \`bab pw remove ${username}\``);
-      return;
-    }
-    if (!ZODIAC.includes(password)) {
-      res.reply(`:x: \`${password}\` isn't a Chinese zodiac animal, uh hello?`);
-      return;
-    }
-
-
-    const players = robot.brain.get(PLAYERS_REDIS_KEY);
-    if (players) {
-      players[username] = {
-        password,
-        slackId: `<@${res.envelope.user.id}>`
-      };
-    } else {
-      robot.brain.set(PLAYERS_REDIS_KEY, {
-        [username]: {
-          password,
-          slackId: `<@${res.envelope.user.id}>`
+        if (username === 'remove') {
+          return;
         }
-      });
-    }
-    res.reply(`:white_check_mark: Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
+
+        if (!ZODIAC.includes(password)) {
+          res.reply(`:x: \`${password}\` isn't a Chinese zodiac animal, uh hello?`);
+          return;
+        }
+
+        getPlayers({ name: username }).toArray((err, players) => {
+          if (players.length === 0) {
+            newPlayer(username, password, `<@${res.envelope.user.id}>`).then(() => {
+              res.reply(`:white_check_mark: Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
+            });
+          } else {
+            res.reply(`:x: \`${username}\` is already signed up, you can do \`bab pw remove ${username}\``);
+          }
+        });
+      }
+    });
   });
 
   // bab pw
   robot.respond(/\s+pw$/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
+    sessionStarted(res).then(started => {
+      if (started) {
+        getPlayers().toArray((err, players) => {
+          if (players.length > 0) {
+            let reply = "Let's see, I have the following players signed up:\n";
+            let availablePlayersReply = '';
+            let unavailablePlayersReply = '';
+            getReservations().toArray((err, reservations) => {
+              const signedUpPlayers = {};
+              reservations.forEach(reservation => {
+                reservation.players.forEach(signedUpPlayer => {
+                  signedUpPlayers[signedUpPlayer] = reservation.courtNumber;
+                });
+              });
 
-    const players = robot.brain.get(PLAYERS_REDIS_KEY);
-    if (players && Object.keys(players).length > 0) {
-      const signedUpPlayers = getPlayerSignupStatuses(robot);
+              players.forEach(player => {
+                const password = player.password;
+                const playerName = player.name;
+                const signedUpCourt = signedUpPlayers[playerName];
 
-      let reply = "Let's see, I have the following players signed up:\n";
-      let availablePlayersReply = '';
-      let unavailablePlayersReply = '';
-      for (let playerName in players) {
-        const password = players[playerName].password;
-        const signedUpCourt = signedUpPlayers[playerName];
+                if (signedUpCourt) {
+                  unavailablePlayersReply = unavailablePlayersReply + `:x: (Court ${signedUpCourt}) \`${playerName}\` - \`${password}\``.padEnd(40) + '\n'
+                } else {
+                  availablePlayersReply = availablePlayersReply + `:white_check_mark: (*Available*) \`${playerName}\` - \`${password}\``.padEnd(40) + '\n'
+                }
+              });
 
-        if (signedUpCourt) {
-          unavailablePlayersReply = unavailablePlayersReply + `:x: (Court ${signedUpCourt.split('_')[1]}) \`${playerName}\` - \`${password}\``.padEnd(40) + '\n'
-        } else {
-          availablePlayersReply = availablePlayersReply + `:white_check_mark: (*Available*) \`${playerName}\` - \`${password}\``.padEnd(40) + '\n'
-        }
+              res.send(reply + availablePlayersReply + unavailablePlayersReply);
+            });
+          } else {
+            res.send('Nobody has signed up yet Q_Q');
+          }
+        });
       }
-      res.send(reply + availablePlayersReply + unavailablePlayersReply);
-    } else {
-      res.send('Nobody has signed up yet Q_Q');
-    }
+    });
   });
 
   // bab pw remove mattp
   robot.respond(/\s+pw\s+remove\s+([a-zA-Z0-9]+)/i, res => {
-    if (!sessionStarted(res, robot)) {
-      return;
-    }
+    sessionStarted(res).then(started => {
+      if (started) {
+        const username = res.match[1].toLowerCase();
+        getReservations().toArray((err, reservations) => {
+          const signedUpPlayers = {};
+          reservations.forEach(reservation => {
+            reservation.players.forEach(signedUpPlayer => {
+              signedUpPlayers[signedUpPlayer] = reservation.courtNumber;
+            });
+          });
 
-    const username = res.match[1].toLowerCase();
-    const players = robot.brain.get(PLAYERS_REDIS_KEY);
-    const playerSignups = getPlayerSignupStatuses(robot);
+          if (signedUpPlayers[username]) {
+            res.reply(`:x: \`${username}\` is signed up on Court ${playerSignups[username].split('_')[1]}`);
+            return;
+          }
 
-    if (playerSignups[username]) {
-      res.reply(`:x: \`${username}\` is signed up on Court ${playerSignups[username].split('_')[1]}`);
-      return;
-    }
-
-    if (players) {
-      if (players[username]) {
-        delete players[username];
-        res.reply(`:white_check_mark: I will forget \`${username}\``);
-        robot.brain.set(PLAYERS_REDIS_KEY, players);
-      } else {
-        res.reply(`:x: Huh? Who is \`${username}\`?`);
+          deletePlayer(username).then(() => {
+            res.reply(`:white_check_mark: I will forget \`${username}\``);
+          });
+        });
       }
-    }
+    });
   });
 };

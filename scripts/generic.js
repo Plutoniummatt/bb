@@ -14,13 +14,11 @@
 // Notes:
 //   <optional notes required for the script>
 const moment = require("moment");
-const { PLAYERS_REDIS_KEY, COURTS_REDIS_KEY, SESSION_REDIS_KEY, COURT_DURATION } = require('./common/constants');
-const { getAllCourts, setAllCourts } = require('./common/functions');
+const { COURT_DURATION } = require('./common/constants');
+const { connectToMongo, newSession, getSession, clearDatabase, getReservations, updateReservations, getPlayers, deleteReservations } = require('./common/mongo');
 
 function reset(robot) {
-  robot.brain.set(SESSION_REDIS_KEY, null);
-  robot.brain.set(PLAYERS_REDIS_KEY, null);
-  robot.brain.set(COURTS_REDIS_KEY, null);
+  clearDatabase();
 }
 
 let monitor;
@@ -31,95 +29,118 @@ function startCourtMonitor(robot) {
   }, 60 * 1000)
 }
 
+function deleteReservationsOrNot(toDelete) {
+  if (toDelete.length === 0) {
+    return new Promise(resolve => {
+      resolve();
+    });
+  } else {
+    return deleteReservations({
+      _id: {
+        $in: toDelete.map(each => each._id)
+      }
+    });
+  }
+}
+
+function updateReservationsOrNot(toUpdate, update) {
+  if (toUpdate.length === 0) {
+    return new Promise(resolve => {
+      resolve();
+    });
+  } else {
+    return updateReservations({
+      _id: {
+        $in: toUpdate.map(each => each._id)
+      }
+    }, update);
+  }
+}
+
 function periodicCourtTask(robot) {
-  const courts = getAllCourts(robot);
-  const allPlayers = robot.brain.get(PLAYERS_REDIS_KEY);
+  getPlayers().toArray((err, players) => {
+    const slackIds = new Set(players.map(player => player.slackId));
+    const newReservations = [];
+    const expiringReservations = [];
+    const reservationsToDelete = [];
 
-  if (courts && allPlayers) {
-    let playerIds = new Set();
-    for (let player in allPlayers) {
-      playerIds.add(allPlayers[player].slackId);
-    }
-    const players = `${Array.from(playerIds.values()).join(' ')}\n`;
-    const newCourts = [];
-    const expiringCourts = [];
-
-    for (let court in courts) {
-      const queue = courts[court];
-      const firstSession = queue[0];
-
-      if (!firstSession) {
-        continue;
-      }
-
-      if (!firstSession.startNotificationSent && !firstSession.randoms) {
-        if (moment().isAfter(moment(firstSession.startAt))) {
-          newCourts.push(court.split('_')[1]);
-          firstSession.startNotificationSent = true;
+    getReservations().sort({ startAt: 1 }).toArray((err, reservations) => {
+      const reservationsByCourt = {};
+      reservations.forEach(reservation => {
+        if (reservationsByCourt[reservation.courtNumber]) {
+          reservationsByCourt[reservation.courtNumber].push(reservation);
+        } else {
+          reservationsByCourt[reservation.courtNumber] = [reservation];
         }
-      }
+      });
 
-      if (!firstSession.expiryNotificationSent && !firstSession.randoms) {
-        if (queue.length === 1 || queue[1].randoms) {
-          if (moment().isAfter(moment(firstSession.startAt).add(COURT_DURATION - 5, 'minutes'))) {
-            expiringCourts.push(court.split('_')[1]);
-            firstSession.expiryNotificationSent = true;
+      for (let courtNumber in reservationsByCourt) {
+        const reservationsForCourt = reservationsByCourt[courtNumber];
+        const firstReservation = reservationsForCourt[0];
+        if (!firstReservation.startNotificationSent && !firstReservation.randoms) {
+          if (moment().isAfter(moment(firstReservation.startAt))) {
+            newReservations.push(firstReservation);
           }
         }
+        if (!firstReservation.expiryNotificationSent && !firstReservation.randoms) {
+          if (reservationsForCourt.length === 1 || reservationsForCourt[1].randoms) {
+            if (moment().isAfter(moment(firstReservation.startAt).add(COURT_DURATION - 5, 'minutes'))) {
+              expiringReservations.push(firstReservation);
+            }
+          }
+        }
+        if (moment().isAfter(moment(firstReservation.startAt).add(COURT_DURATION - 1, 'minutes'))) {
+          reservationsToDelete.push(firstReservation);
+        }
       }
 
-      if (moment().isAfter(moment(firstSession.startAt).add(COURT_DURATION - 1, 'minutes'))) {
-        courts[court] = queue.slice(1);
-      }
-    }
-
-    if (newCourts.length > 0 || expiringCourts.length > 0) {
-      let message = players + '\n';
-      if (newCourts.length > 0) {
-        message = message + `:white_check_mark: We now have courts ${newCourts.join(',')}\n`;
-      }
-      if (expiringCourts.length > 0) {
-        message = message + `:warning: Courts ${expiringCourts.join(',')} are expring in 5 minutes`;
-      }
-      robot.messageRoom('#badminton', message);
-    }
-    setAllCourts(robot, courts);
-  }
+      deleteReservationsOrNot(reservationsToDelete).then(() => {
+        updateReservationsOrNot(newReservations, { $set: { startNotificationSent: true }}).then(() => {
+          updateReservationsOrNot(expiringReservations, { $set: { expiryNotificationSent: true }}).then(() => {
+            if (newReservations.length > 0 || expiringReservations.length > 0) {
+              let message = Array.from(slackIds) + '\n';
+              if (newReservations.length > 0) {
+                message = message + `:white_check_mark: We now have courts *(${newReservations.map(each => each.courtNumber).join(',')})*\n`;
+              }
+              if (expiringReservations.length > 0) {
+                message = message + `:warning: Courts *(${expiringReservations.map(each => each.courtNumber).join(',')})* are expring in 5 minutes`;
+              }
+              robot.messageRoom('#badminton', message);
+            }
+          });
+        });
+      });
+    });
+  });
 }
 
 module.exports = robot => {
   monitor = startCourtMonitor(robot);
+  connectToMongo(robot);
 
   // bab start
   robot.respond(/\s+start$/i, res => {
-    if (robot.brain.get(SESSION_REDIS_KEY)) {
-      res.send("People are already playing! Get on with it.");
-    } else {
-      robot.brain.set(SESSION_REDIS_KEY, {
-        startTime: moment().valueOf(),
-        room: res.message.room
-      });
-      res.send("Starting badminton session now. Enjoy!");
-    }
+    getSession().then(session => {
+      if (session) {
+        res.send("People are already playing! Get on with it.");
+      } else {
+        newSession().then(() => {
+          res.send("Starting badminton session now. Enjoy!");
+        });
+      }
+    });
   });
 
   // bab stop
   robot.respond(/\s+stop$/i, res => {
-    const session = robot.brain.get(SESSION_REDIS_KEY);
-    if (session) {
-      robot.brain.set(SESSION_REDIS_KEY, null);
-      const timePlayed = moment.duration(moment() - moment(session.startTime)).humanize();
-      reset(robot);
-      res.send(`Ending badminton session. You’ve played for ${timePlayed}.`);
-    } else {
-      res.send("Can't stop what aint running, capn'");
-    }
-  });
-
-  robot.respond(/\sintro\s(.+)$/i, res => {
-    const channelName = `#${res.match[1].toLowerCase()}`;
-    const message1 = "Hello Square Badminton players! :waves: My name is `bab` (short for badminton bot), I'm here to help you keep track of passwords and court signups. This will be my first day on the job, so if you notice something that's not quite right, please notify @peck and @jonchay \n";
-    const message2 = "To see what I can do, type `bab help`, I hope I can make your lives easier! :v:"
-    robot.messageRoom(channelName, message1+message2);
+    getSession().then(session => {
+      if (session) {
+        const timePlayed = moment.duration(moment() - moment(session.startAt)).humanize();
+        reset(robot);
+        res.send(`Ending badminton session. You’ve played for ${timePlayed}.`);
+      } else {
+        res.send("Can't stop what aint running, capn'");
+      }
+    });
   });
 };
