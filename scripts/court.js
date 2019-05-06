@@ -148,6 +148,10 @@ module.exports = robot => {
           delayTime
         } = parseMatches(res.match);
 
+        if (delayTime || !isNaN(delayTime)) {
+          return;
+        }
+
         if (!players.includes('randoms')) {
           addCourt(
             robot,

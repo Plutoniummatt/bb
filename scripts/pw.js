@@ -56,7 +56,7 @@ const ZODIAC = [
 
 module.exports = robot => {
   // bab pw mattp monkey
-  robot.respond(/\s+pw\s+([a-zA-Z0-9]+)\s+([a-zA-Z]+)/i, res => {
+  robot.respond(/\s+pw\s+([a-zA-Z0-9]+)\s+([a-zA-Z]+)$/i, res => {
     sessionStarted(res).then(started => {
       if (started) {
         const username = res.match[1].toLowerCase();
@@ -85,7 +85,7 @@ module.exports = robot => {
   });
 
   // bab pw <password>
-  robot.respond(/\s+pw\s+([a-zA-Z]+)/i, res => {
+  robot.respond(/\s+pw\s+([a-zA-Z]+)$/i, res => {
     getMembers({ slackId: res.envelope.user.id }).toArray((err, members) => {
       if (members.length === 1) {
         const password = res.match[1].toLowerCase();
@@ -149,7 +149,7 @@ module.exports = robot => {
   });
 
   // bab pw remove mattp
-  robot.respond(/\s+pw\s+remove\s+([a-zA-Z0-9]+)/i, res => {
+  robot.respond(/\s+pw\s+remove\s+([a-zA-Z0-9]+)$/i, res => {
     sessionStarted(res).then(started => {
       if (started) {
         const username = res.match[1].toLowerCase();
