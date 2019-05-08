@@ -148,7 +148,7 @@ module.exports = robot => {
           delayTime
         } = parseMatches(res.match);
 
-        if (delayTime || !isNaN(delayTime)) {
+        if (delayTime) {
           return;
         }
 
