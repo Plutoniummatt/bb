@@ -20,5 +20,8 @@
   },
   "engines": {
     "node": "10.x"
+  },
+  "devDependencies": {
+    "hubot-test-helper": "^1.9.0"
   }
 }
