@@ -57,6 +57,7 @@ const ZODIAC = [
 module.exports = robot => {
   // bab pw mattp monkey
   robot.respond(/\s+pw\s+([a-zA-Z0-9]+)\s+([a-zA-Z]+)$/i, res => {
+    console.log('testing this pw');
     sessionStarted(res).then(started => {
       if (started) {
         const username = res.match[1].toLowerCase();
