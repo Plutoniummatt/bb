@@ -4,6 +4,9 @@
   "private": true,
   "author": "Matthew Peck <peck@squareup.com>",
   "description": "A simple helpful robot for your Company",
+  "scripts": {
+    "test": "qunit"
+  },
   "dependencies": {
     "@slack/client": "^5.0.1",
     "hubot": "^3.3.2",
@@ -21,7 +24,8 @@
     "node": "10.x"
   },
   "devDependencies": {
-    "hubot-test-helper": "^1.9.0"
+    "hubot-test-helper": "^1.9.0",
+    "qunit": "^2.9.2"
   },
   "main": "index.js",
   "repository": "git@github.com:Plutoniummatt/bb.git",
