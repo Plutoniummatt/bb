@@ -119,7 +119,7 @@ module.exports = robot => {
   robot.respond(/\s+secretcommand\s+([a-zA-Z\-]+)\s+(.*)$/i, res => {
     const room = res.match[1].toLowerCase();
     const message = res.match[2].toLowerCase();
-    res.messageRoom(`#${room}`, message);
+    robot.messageRoom(`#${room}`, message);
   });
 
   // bab start
