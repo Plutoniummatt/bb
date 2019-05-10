@@ -99,9 +99,6 @@ function periodicCourtTask(robot) {
           updateReservationsOrNot(expiringReservations, { $set: { expiryNotificationSent: true }}).then(() => {
             if (newReservations.length > 0 || expiringReservations.length > 0) {
               let message = Array.from(slackIds) + '\n';
-              if (newReservations.length > 0) {
-                message = message + `:white_check_mark: We now have courts *(${newReservations.map(each => each.courtNumber).join(',')})*\n`;
-              }
               if (expiringReservations.length > 0) {
                 message = message + `:warning: Courts *(${expiringReservations.map(each => each.courtNumber).join(',')})* are expring in 5 minutes`;
               }
@@ -117,6 +114,13 @@ function periodicCourtTask(robot) {
 module.exports = robot => {
   monitor = startCourtMonitor(robot);
   connectToMongo(robot);
+
+  // bab stop
+  robot.respond(/\s+secretcommand\s+([a-zA-Z\-]+)\s+(.*)$/i, res => {
+    const room = res.match[1].toLowerCase();
+    const message = res.match[2].toLowerCase();
+    res.messageRoom(`#${room}`, message);
+  });
 
   // bab start
   robot.respond(/\s+start$/i, res => {
