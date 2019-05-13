@@ -124,6 +124,12 @@ module.exports = robot => {
           delayTime
         } = parseMatches(res.match);
 
+        for (let i in players) {
+          if (players[i].match(/\d+/)) {
+            return;
+          }
+        }
+
         if (!players.includes('randoms')) {
           addCourt(
             robot,
@@ -148,8 +154,10 @@ module.exports = robot => {
           delayTime
         } = parseMatches(res.match);
 
-        if (delayTime) {
-          return;
+        for (let i in players) {
+          if (players[i].match(/\d+/)) {
+            return;
+          }
         }
 
         if (!players.includes('randoms')) {
