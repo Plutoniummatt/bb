@@ -115,6 +115,11 @@ module.exports = robot => {
   monitor = startCourtMonitor(robot);
   connectToMongo(robot);
 
+  // bab hello
+  robot.respond(/\s+hello$/i, res => {
+    res.send(':bab-1::bab-2::bab-3:\n:bab-4::bab-5::bab-6:\n:bab-7::bab-8::bab-9:');
+  });
+
   // bab stop
   robot.respond(/\s+secretcommand\s+([a-zA-Z\-]+)\s+(.*)$/i, res => {
     const room = res.match[1].toLowerCase();
