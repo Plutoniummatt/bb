@@ -117,7 +117,7 @@ module.exports = robot => {
 
   // bab hello
   robot.respond(/\s+hello$/i, res => {
-    res.send('\n:bab-1::bab-2::bab-3:\n:bab-4::bab-5::bab-6:\n:bab-7::bab-8::bab-9:');
+    res.send('.\n:bab-1::bab-2::bab-3:\n:bab-4::bab-5::bab-6:\n:bab-7::bab-8::bab-9:');
   });
 
   // bab stop
