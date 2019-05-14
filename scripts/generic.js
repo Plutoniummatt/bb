@@ -97,7 +97,7 @@ function periodicCourtTask(robot) {
       deleteReservationsOrNot(reservationsToDelete).then(() => {
         updateReservationsOrNot(newReservations, { $set: { startNotificationSent: true }}).then(() => {
           updateReservationsOrNot(expiringReservations, { $set: { expiryNotificationSent: true }}).then(() => {
-            if (newReservations.length > 0 || expiringReservations.length > 0) {
+            if (expiringReservations.length > 0) {
               let message = Array.from(slackIds) + '\n';
               if (expiringReservations.length > 0) {
                 message = message + `:warning: Courts *(${expiringReservations.map(each => each.courtNumber).join(',')})* are expring in 5 minutes`;
