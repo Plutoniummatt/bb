@@ -77,36 +77,12 @@ function periodicCourtTask(robot) {
       for (let courtNumber in reservationsByCourt) {
         const reservationsForCourt = reservationsByCourt[courtNumber];
         const firstReservation = reservationsForCourt[0];
-        if (!firstReservation.startNotificationSent && !firstReservation.randoms) {
-          if (moment().isAfter(moment(firstReservation.startAt))) {
-            newReservations.push(firstReservation);
-          }
-        }
-        if (!firstReservation.expiryNotificationSent && !firstReservation.randoms) {
-          if (reservationsForCourt.length === 1 || reservationsForCourt[1].randoms) {
-            if (moment().isAfter(moment(firstReservation.startAt).add(COURT_DURATION - 5, 'minutes'))) {
-              expiringReservations.push(firstReservation);
-            }
-          }
-        }
         if (moment().isAfter(moment(firstReservation.startAt).add(COURT_DURATION - 1, 'minutes'))) {
           reservationsToDelete.push(firstReservation);
         }
       }
 
-      deleteReservationsOrNot(reservationsToDelete).then(() => {
-        updateReservationsOrNot(newReservations, { $set: { startNotificationSent: true }}).then(() => {
-          updateReservationsOrNot(expiringReservations, { $set: { expiryNotificationSent: true }}).then(() => {
-            if (expiringReservations.length > 0) {
-              let message = Array.from(slackIds) + '\n';
-              if (expiringReservations.length > 0) {
-                message = message + `:warning: Courts *(${expiringReservations.map(each => each.courtNumber).join(',')})* are expring in 5 minutes`;
-              }
-              robot.messageRoom('#badminton', message);
-            }
-          });
-        });
-      });
+      deleteReservationsOrNot(reservationsToDelete);
     });
   });
 }
