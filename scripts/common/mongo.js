@@ -1,5 +1,6 @@
 const MongoClient = require('mongodb').MongoClient;
 const moment = require("moment");
+const uuidv1 = require("uuid/v1");
 
 const BRAIN = 'brain';
 const SESSIONS = 'sessions';
@@ -87,7 +88,8 @@ module.exports = {
       courtNumber: Number(courtNumber),
       players,
       startAt: moment(startAt).valueOf(),
-      randoms: Boolean(randoms)
+      randoms: Boolean(randoms),
+      token: uuidv1()
     });
   },
 
