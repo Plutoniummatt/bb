@@ -139,7 +139,7 @@ module.exports = robot => {
         reactionCount[reactedSlackName] = 1 + (reactionCount[reactedSlackName] || 0);
       });
 
-      uniqueMentions = [...new Set(reactedSlackNames)].map(reactedSlackName => {
+      const uniqueMentions = [...new Set(reactedSlackNames)].map(reactedSlackName => {
         if (reactionCount[reactedSlackName] > 1) {
           return `${reactedSlackName} (+${reactionCount[reactedSlackName] - 1})`;
         } else {
