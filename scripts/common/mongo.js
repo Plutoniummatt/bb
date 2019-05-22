@@ -8,6 +8,7 @@ const PLAYERS = 'players';
 const MEMBERS = 'members';
 const RESERVATIONS = 'reservations';
 const REACTIONS = 'reactions';
+const PERSISTENTKITCHENSINK = 'persistentkitchensink'; // Forever persistent
 
 let database;
 module.exports = {
@@ -26,6 +27,7 @@ module.exports = {
       database.createCollection(PLAYERS);
       database.createCollection(RESERVATIONS);
       database.createCollection(REACTIONS);
+      database.createCollection(PERSISTENTKITCHENSINK);
     });
   },
 
@@ -40,7 +42,7 @@ module.exports = {
     // Separate lifecycle for reaction so that if
     // people are messing around with `bab start` / `bab stop`
     // during the day, reaction records are not dropped
-    database.collection(REACTIONS).deleteMany();
+    return database.collection(REACTIONS).deleteMany();
   },
 
   deleteMember: function(slackId) {
@@ -124,5 +126,24 @@ module.exports = {
     return database.collection(REACTIONS).deleteOne({
       slackName
     });
+  },
+
+  getReactionMessageId() {
+    return database.collection(PERSISTENTKITCHENSINK).findOne({
+      context: 'reactionMessageId'
+    }).then(record => {
+      return record.value;
+    });
+  },
+
+  updateOrInsertReactionMessageId(id) {
+    return database.collection(PERSISTENTKITCHENSINK).update(
+      { context: 'reactionMessageId' },
+      {
+        context: 'reactionMessageId',
+        value: id
+      },
+      { upsert: true }
+    );
   }
 };

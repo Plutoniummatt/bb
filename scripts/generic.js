@@ -27,7 +27,9 @@ const {
   newReaction,
   deleteReaction,
   getReactions,
-  resetReactions
+  resetReactions,
+  getReactionMessageId,
+  updateOrInsertReactionMessageId
 } = require('./common/mongo');
 
 function reset(robot) {
@@ -111,14 +113,18 @@ module.exports = robot => {
 
   // Listen to the Reminder message to count reactions
   robot.hear(/Reminder: @badminton-(tuesday|thursday|saturday|testday) react with/i, res => {
-    resetReactions();
-    const messageId = res.message.id;
-    robot.hearReaction(res2 => {
-      if (res2.message.item.ts === messageId) {
-        if (res2.message.type === "added") {
-          newReaction(res2.message.user.name);
-        } else if (res2.message.type === "removed") {
-          deleteReaction(res2.message.user.name);
+    resetReactions().then(() => {
+      updateOrInsertReactionMessageId(res.message.id);
+    });
+  });
+
+  robot.hearReaction(res => {
+    getReactionMessageId().then(id => {
+      if (res.message.item.ts === id) {
+        if (res.message.type === "added") {
+          newReaction(res.message.user.name);
+        } else if (res.message.type === "removed") {
+          deleteReaction(res.message.user.name);
         }
       }
     });
