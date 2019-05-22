@@ -7,6 +7,7 @@ const SESSIONS = 'sessions';
 const PLAYERS = 'players';
 const MEMBERS = 'members';
 const RESERVATIONS = 'reservations';
+const REACTIONS = 'reactions';
 
 let database;
 module.exports = {
@@ -24,6 +25,7 @@ module.exports = {
       database.createCollection(MEMBERS);
       database.createCollection(PLAYERS);
       database.createCollection(RESERVATIONS);
+      database.createCollection(REACTIONS);
     });
   },
 
@@ -32,6 +34,13 @@ module.exports = {
     database.collection(SESSIONS).deleteMany();
     database.collection(PLAYERS).deleteMany();
     database.collection(RESERVATIONS).deleteMany();
+  },
+
+  resetReactions() {
+    // Separate lifecycle for reaction so that if
+    // people are messing around with `bab start` / `bab stop`
+    // during the day, reaction records are not dropped
+    database.collection(REACTIONS).deleteMany();
   },
 
   deleteMember: function(slackId) {
@@ -99,5 +108,21 @@ module.exports = {
 
   updateReservations: function(filter, update) {
     return database.collection(RESERVATIONS).updateMany(filter, update);
+  },
+
+  getReactions: function(query) {
+    return database.collection(REACTIONS).find(query);
+  },
+
+  newReaction: function(slackName) {
+    return database.collection(REACTIONS).insertOne({
+      slackName,
+    });
+  },
+
+  deleteReaction: function(slackName) {
+    return database.collection(REACTIONS).deleteOne({
+      slackName
+    });
   }
 };
