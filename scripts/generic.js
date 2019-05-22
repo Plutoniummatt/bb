@@ -15,7 +15,20 @@
 //   <optional notes required for the script>
 const moment = require("moment");
 const { COURT_DURATION } = require('./common/constants');
-const { connectToMongo, newSession, getSession, clearDatabase, getReservations, updateReservations, getPlayers, deleteReservations } = require('./common/mongo');
+const {
+  connectToMongo,
+  newSession,
+  getSession,
+  clearDatabase,
+  getReservations,
+  updateReservations,
+  getPlayers,
+  deleteReservations,
+  newReaction,
+  deleteReaction,
+  getReactions,
+  resetReactions
+} = require('./common/mongo');
 
 function reset(robot) {
   clearDatabase();
@@ -94,6 +107,55 @@ module.exports = robot => {
   // bab hello
   robot.respond(/\s+hello$/i, res => {
     res.send('.\n:bab-1::bab-2::bab-3:\n:bab-4::bab-5::bab-6:\n:bab-7::bab-8::bab-9:');
+  });
+
+  // Listen to the Reminder message to count reactions
+  robot.hear(/Reminder: @badminton-(tuesday|thursday|saturday|testday) react with/i, res => {
+    resetReactions();
+    const messageId = res.message.id;
+    robot.hearReaction(res2 => {
+      if (res2.message.item.ts === messageId) {
+        if (res2.message.type === "added") {
+          newReaction(res2.message.user.name);
+        } else if (res2.message.type === "removed") {
+          deleteReaction(res2.message.user.name);
+        }
+      }
+    });
+  });
+
+  // bab who is playing
+  robot.respond(/who is playing/i, res => {
+    getReactions().toArray((err, reactions) => {
+      let mentions = reactions.map(r => { return `@${r.slackName}` } );
+
+      if (mentions.length === 0) {
+        res.send(`Nobody is playing, wow so lonely :cry:`);
+        return;
+      }
+
+      let counts = {};
+      for (let i = 0; i < mentions.length; i++) {
+        counts[mentions[i]] = 1 + (counts[mentions[i]] || 0);
+      }
+
+      uniq_mentions = [...new Set(mentions)].map(m => {
+        if (counts[m] > 1) {
+          return `${m} (+${counts[m] - 1})`;
+        } else {
+          return m;
+        }
+      });
+
+      if (uniq_mentions.length === 1) {
+        res.send(`${uniq_mentions[0]} is playing!`);
+        return;
+      }
+
+      const lastMention = uniq_mentions.pop();
+
+      res.send(`${uniq_mentions.join(', ')} and ${lastMention}, for a total of *${uniq_mentions.length + 1}* Squares! :dancingrobot:`);
+    });
   });
 
   // bab stop
