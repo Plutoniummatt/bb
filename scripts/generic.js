@@ -125,36 +125,38 @@ module.exports = robot => {
   });
 
   // bab who is playing
-  robot.respond(/who is playing/i, res => {
+  robot.respond(/\s+who is playing$/i, res => {
     getReactions().toArray((err, reactions) => {
-      let mentions = reactions.map(r => { return `@${r.slackName}` } );
+      const reactedSlackNames = reactions.map(r => `@${r.slackName}`);
 
-      if (mentions.length === 0) {
+      if (reactedSlackNames.length === 0) {
         res.send(`Nobody is playing, wow so lonely :cry:`);
         return;
       }
 
-      let counts = {};
-      for (let i = 0; i < mentions.length; i++) {
-        counts[mentions[i]] = 1 + (counts[mentions[i]] || 0);
-      }
+      const reactionCount = {};
+      reactedSlackNames.forEach(reactedSlackName => {
+        reactionCount[reactedSlackName] = 1 + (reactionCount[reactedSlackName] || 0);
+      });
 
-      uniq_mentions = [...new Set(mentions)].map(m => {
-        if (counts[m] > 1) {
-          return `${m} (+${counts[m] - 1})`;
+      uniqueMentions = [...new Set(reactedSlackNames)].map(reactedSlackName => {
+        if (reactionCount[reactedSlackName] > 1) {
+          return `${reactedSlackName} (+${reactionCount[reactedSlackName] - 1})`;
         } else {
-          return m;
+          return reactedSlackName;
         }
       });
 
-      if (uniq_mentions.length === 1) {
-        res.send(`${uniq_mentions[0]} is playing!`);
+      if (uniqueMentions.length === 1) {
+        res.send(`${uniqueMentions[0]} is playing! :foreveralone:`);
         return;
       }
 
-      const lastMention = uniq_mentions.pop();
-
-      res.send(`${uniq_mentions.join(', ')} and ${lastMention}, for a total of *${uniq_mentions.length + 1}* Squares! :dancingrobot:`);
+      const totalPlayers = Object.values(reactionCount).reduce((n, t) => n + t);
+      const plusOnes = totalPlayers - uniqueMentions.length;
+      const plusOnesMessage = plusOnes === 0 ? '' : ` and ${plusOnes} guests`
+      const lastMention = uniqueMentions.pop();
+      res.send(`${uniqueMentions.join(', ')} and ${lastMention}, for a total of *${uniqueMentions.length + 1}* Squares${plusOnesMessage}! :dancingrobot:`);
     });
   });
 
