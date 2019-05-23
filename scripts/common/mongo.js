@@ -132,7 +132,10 @@ module.exports = {
     return database.collection(PERSISTENTKITCHENSINK).findOne({
       context: 'reactionMessageId'
     }).then(record => {
-      return record.value;
+      return {
+        id: record.value,
+        notified: record.notified
+      };
     });
   },
 
@@ -141,9 +144,17 @@ module.exports = {
       { context: 'reactionMessageId' },
       {
         context: 'reactionMessageId',
-        value: id
+        value: id,
+        notified: false
       },
       { upsert: true }
+    );
+  },
+
+  notifyReactions() {
+    return database.collection(PERSISTENTKITCHENSINK).update(
+      { context: 'reactionMessageId' },
+      { notified: true }
     );
   }
 };

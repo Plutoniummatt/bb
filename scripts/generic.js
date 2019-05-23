@@ -29,7 +29,8 @@ const {
   getReactions,
   resetReactions,
   getReactionMessageId,
-  updateOrInsertReactionMessageId
+  updateOrInsertReactionMessageId,
+  notifyReactions
 } = require('./common/mongo');
 
 function reset(robot) {
@@ -119,11 +120,25 @@ module.exports = robot => {
   });
 
   robot.hearReaction(res => {
-    getReactionMessageId().then(id => {
-      if (res.message.item.ts === id) {
+    getReactionMessageId().then(result => {
+      if (res.message.item.ts === result.id) {
         if (res.message.type === "added") {
+          if (result.notified) {
+            getReactions({ slackName: res.message.user.name }).toArray((err, reactions) => {
+              if (reactions.length === 0) {
+                res.send(`@${res.message.user.name} has appeared and will join!`)
+              }
+            });
+          }
           newReaction(res.message.user.name);
         } else if (res.message.type === "removed") {
+          if (result.notified) {
+            getReactions({ slackName: res.message.user.name }).toArray((err, reactions) => {
+              if (reactions.length === 1) {
+                res.send(`Bye @${res.message.user.name} :cry:`)
+              }
+            });
+          }
           deleteReaction(res.message.user.name);
         }
       }
@@ -167,6 +182,7 @@ module.exports = robot => {
       const plusOnes = totalPlayers - uniqueMentions.length;
       const plusOnesMessage = plusOnes === 0 ? '' : ` and ${plusOnes} guests`
       const lastMention = uniqueMentions.pop();
+      notifyReactions();
       res.send(`${uniqueMentions.join(', ')} and ${lastMention}, for a total of *${uniqueMentions.length + 1}* Squares${plusOnesMessage}! :dancingrobot:`);
     });
   });
