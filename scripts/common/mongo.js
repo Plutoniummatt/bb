@@ -154,7 +154,11 @@ module.exports = {
   notifyReactions() {
     return database.collection(PERSISTENTKITCHENSINK).update(
       { context: 'reactionMessageId' },
-      { notified: true }
+      {
+        $set: {
+          notified: true
+        }
+      }
     );
   }
 };
