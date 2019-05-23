@@ -119,11 +119,10 @@ module.exports = robot => {
   });
 
   robot.hearReaction(res => {
-    robot.messageRoom('#badminton-bot-tester', res.message.item.ts);
-
     getReactionMessageId().then(id => {
       if (res.message.item.ts === id) {
         if (res.message.type === "added") {
+          robot.messageRoom('#badminton-bot-tester', res.message.user.name);
           newReaction(res.message.user.name);
         } else if (res.message.type === "removed") {
           deleteReaction(res.message.user.name);
