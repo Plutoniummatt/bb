@@ -136,7 +136,7 @@ module.exports = robot => {
       const silent = res.match.length > 1 && Boolean(res.match[1]) && res.match[1].trim() !== '';
       const reactedSlackNames = reactions.map(r => {
         return silent
-          ? r.slackName
+          ? '`r.slackName`'
           : `@${r.slackName}`;
       });
 
