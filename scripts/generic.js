@@ -133,7 +133,7 @@ module.exports = robot => {
   // bab who is playing
   robot.respond(/\s+who is playing(\s+\-s)*$/i, res => {
     getReactions().toArray((err, reactions) => {
-      const silent = res.match.length > 1;
+      const silent = res.match.length > 1 && Boolean(res.match[1]) && res.match[1].trim() !== '';
       const reactedSlackNames = reactions.map(r => {
         return silent
           ? r.slackName
