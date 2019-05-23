@@ -116,6 +116,10 @@ module.exports = {
     return database.collection(REACTIONS).find(query);
   },
 
+  countReactions: function(query) {
+    return database.collection(REACTIONS).count(query);
+  },
+
   newReaction: function(slackName) {
     return database.collection(REACTIONS).insertOne({
       slackName,

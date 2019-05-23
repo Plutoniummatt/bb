@@ -30,7 +30,8 @@ const {
   resetReactions,
   getReactionMessageId,
   updateOrInsertReactionMessageId,
-  notifyReactions
+  notifyReactions,
+  countReactions
 } = require('./common/mongo');
 
 function reset(robot) {
@@ -108,7 +109,7 @@ module.exports = robot => {
   connectToMongo(robot);
 
   // bab hello
-  robot.respond(/\s+hello$/i, res => {
+  robot.respond(/\s+(hello|nihao|leihou)$/i, res => {
     res.send('.\n:bab-1::bab-2::bab-3:\n:bab-4::bab-5::bab-6:\n:bab-7::bab-8::bab-9:');
   });
 
@@ -124,10 +125,9 @@ module.exports = robot => {
       if (res.message.item.ts === result.id) {
         if (res.message.type === "added") {
           if (result.notified) {
-            getReactions({ slackName: res.message.user.name }).toArray((err, reactions) => {
-              res.messageRoom('#badminton-bot-tester', JSON.stringify(err));
-              res.messageRoom('#badminton-bot-tester', JSON.stringify(reactions));
-              if (reactions.length === 0) {
+            countReactions({ slackName: res.message.user.name }).then(count => {
+              res.messageRoom('#badminton-bot-tester', count);
+              if (count === 0) {
                 // res.send(`@${res.message.user.name} has appeared and will join!`)
               }
             });
