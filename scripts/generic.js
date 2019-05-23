@@ -126,7 +126,7 @@ module.exports = robot => {
         if (res.message.type === "added") {
           if (result.notified) {
             countReactions({ slackName: res.message.user.name }).then(count => {
-              res.messageRoom('#badminton-bot-tester', count);
+              console.log(count);
               if (count === 0) {
                 // res.send(`@${res.message.user.name} has appeared and will join!`)
               }
