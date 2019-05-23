@@ -124,7 +124,13 @@ module.exports = robot => {
       if (res.message.item.ts === result.id) {
         if (res.message.type === "added") {
           if (result.notified) {
-            res.send(`@${res.message.user.name} has appeared and will join!`)
+            getReactions({ slackName: res.message.user.name }).toArray((err, reactions) => {
+              res.messageRoom('#badminton-bot-tester', JSON.stringify(err));
+              res.messageRoom('#badminton-bot-tester', JSON.stringify(reactions));
+              if (reactions.length === 0) {
+                // res.send(`@${res.message.user.name} has appeared and will join!`)
+              }
+            });
           }
           newReaction(res.message.user.name);
         } else if (res.message.type === "removed") {
