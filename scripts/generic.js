@@ -124,11 +124,7 @@ module.exports = robot => {
       if (res.message.item.ts === result.id) {
         if (res.message.type === "added") {
           if (result.notified) {
-            getReactions({ slackName: res.message.user.name }).toArray((err, reactions) => {
-              if (reactions.length === 0) {
-                res.send(`@${res.message.user.name} has appeared and will join!`)
-              }
-            });
+            res.send(`@${res.message.user.name} has appeared and will join!`)
           }
           newReaction(res.message.user.name);
         } else if (res.message.type === "removed") {
