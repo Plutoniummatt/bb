@@ -131,9 +131,14 @@ module.exports = robot => {
   });
 
   // bab who is playing
-  robot.respond(/\s+who is playing$/i, res => {
+  robot.respond(/\s+who is playing(\s+\-s)*$/i, res => {
     getReactions().toArray((err, reactions) => {
-      const reactedSlackNames = reactions.map(r => `@${r.slackName}`);
+      const silent = res.match.length > 1;
+      const reactedSlackNames = reactions.map(r => {
+        return silent
+          ? r.slackName
+          : `@${r.slackName}`;
+      });
 
       if (reactedSlackNames.length === 0) {
         res.send(`Nobody is playing, wow so lonely :cry:`);
