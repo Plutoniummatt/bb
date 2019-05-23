@@ -182,7 +182,7 @@ module.exports = robot => {
       const plusOnes = totalPlayers - uniqueMentions.length;
       const plusOnesMessage = plusOnes === 0 ? '' : ` and ${plusOnes} guests`
       const lastMention = uniqueMentions.pop();
-      const czhangEasterEgg = Boolean(uniqueMentions.find(m => m.includes('czhang'))) ? ':czhang::czhang2::czhang3:' : '';
+      const czhangEasterEgg = Boolean(uniqueMentions.find(m => m.includes('czhang'))) ? '' : ':czhang::czhang2::czhang3:';
       notifyReactions();
       res.send(`${uniqueMentions.join(', ')} and ${lastMention}, for a total of *${uniqueMentions.length + 1}* Squares${plusOnesMessage}! :dancingrobot:` + czhangEasterEgg);
     });
