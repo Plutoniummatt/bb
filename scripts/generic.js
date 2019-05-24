@@ -133,13 +133,6 @@ module.exports = robot => {
           }
           newReaction(res.message.user.name);
         } else if (res.message.type === "removed") {
-          if (result.notified) {
-            getReactions({ slackName: res.message.user.name }).toArray((err, reactions) => {
-              if (reactions.length === 1) {
-                res.send(`Bye @${res.message.user.name} :cry:`)
-              }
-            });
-          }
           deleteReaction(res.message.user.name);
         }
       }
