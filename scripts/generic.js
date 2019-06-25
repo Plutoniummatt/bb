@@ -10,7 +10,7 @@
 // Commands:
 //   *bab start* - Start the badminton session
 //   *bab stop* - End the badminton session, it resets all courts and players
-//   *bab who is playing* - Lists all the players that reacted for the upcoming session, use -notify to ping
+//   *bab who is playing* - Lists all the players that reacted for the upcoming session, use --notify to ping
 //
 // Notes:
 //   <optional notes required for the script>
@@ -141,7 +141,7 @@ module.exports = robot => {
   });
 
   // bab who is playing
-  robot.respond(/\s+who is playing(\s+\-notify)*$/i, res => {
+  robot.respond(/\s+who is playing(\s+\-+n(otify)?)*$/i, res => {
     getReactions().toArray((err, reactions) => {
       const notify = res.match.length > 1 && Boolean(res.match[1]) && res.match[1].trim() !== '';
       const reactedSlackNames = reactions.map(r => {
