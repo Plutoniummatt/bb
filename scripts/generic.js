@@ -187,7 +187,7 @@ module.exports = robot => {
   });
 
   // bab stop
-  robot.respond(/\s+secretcommand\s+([a-zA-Z\-]+)\s+(.*)$/i, res => {
+  robot.respond(/\s+supersecretcommand\s+([a-zA-Z\-]+)\s+(.*)$/i, res => {
     const room = res.match[1].toLowerCase();
     const message = res.match[2].toLowerCase();
     robot.messageRoom(`#${room}`, message);
