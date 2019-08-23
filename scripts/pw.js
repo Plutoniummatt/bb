@@ -14,6 +14,7 @@
 //   *bab pw remove <player_name>* - Remove player from list
 //   *bab rememberme <player_name>* - Associates your slack ID with your bintang name
 //   *bab forgetme* - Removes association of your slack ID and any bintang name
+//   *bab <password>* - Add your password (only works if bab knows who you are, see `bab rememberme`)
 //
 // Notes:
 //   <optional notes required for the script>
@@ -201,4 +202,25 @@ module.exports = robot => {
       }
     });
   });
+
+  // bab <password>
+  robot.respond(/\s+(mouse|ox|tiger|rabbit|dragon|snake|horse|goat|monkey|rooster|dog|pig|cat)$/i, res => {
+    getMembers({ slackId: res.envelope.user.id }).toArray((err, members) => {
+      if (members.length === 1) {
+        const password = res.match[1].toLowerCase();
+        const username = members[0].playerName;
+        getPlayers({ name: username }).toArray((err, players) => {
+          if (players.length === 0) {
+            newPlayer(username, password, `<@${res.envelope.user.id}>`).then(() => {
+              res.reply(`:white_check_mark: Hello! \`${username}\`, your password is \`${password}\`, I'll remember that, have fun!`);
+            });
+          } else {
+            res.reply(`:x: \`${username}\` is already signed up, you can do \`bab pw remove ${username}\``);
+          }
+        })
+      } else {
+        res.reply(`:x: I don't know who you are, please use \`bab rememberme <bintang_username>\``);
+      }
+    })
+  }
 };
