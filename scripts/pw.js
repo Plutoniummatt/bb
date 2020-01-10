@@ -51,7 +51,8 @@ const ZODIAC = [
   'rooster',
   'dog',
   'pig',
-  'cat'
+  'cat',
+  'bee'
 ];
 
 module.exports = robot => {
