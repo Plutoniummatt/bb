@@ -115,7 +115,7 @@ module.exports = robot => {
   });
 
   // Listen to the Reminder message to count reactions
-  robot.hear(/Reminder: @badminton-(tuesday|thursday|saturday|testday) react with/i, res => {
+  robot.hear(/Reminder.*react with.*if you.re playing on.*/i, res => {
     resetReactions().then(() => {
       updateOrInsertReactionMessageId(res.message.id);
     });
