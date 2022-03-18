@@ -1,3 +1,3 @@
 module.exports = {
-  COURT_DURATION: 45
+  COURT_DURATION: 30
 };
