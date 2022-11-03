@@ -1,6 +1,7 @@
 const MongoClient = require('mongodb').MongoClient;
 const moment = require("moment");
 const uuidv1 = require("uuid/v1");
+const XMLHttpRequest = require('xhr2')
 
 const BRAIN = 'brain';
 const SESSIONS = 'sessions';
@@ -73,6 +74,15 @@ module.exports = {
   },
 
   newPlayer: function(name, password, slackId) {
+    const request = async () => {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open('POST', 'https://briancwang.com/badminton_api/users', true)
+      xhttp.setRequestHeader('Content-Type', 'application/json')
+      xhttp.send(`{ "name": "${name}", "password": "${password}" }`)
+    }
+    
+    request()
+
     return database.collection(PLAYERS).insertOne({
       name,
       password,
@@ -85,6 +95,15 @@ module.exports = {
   },
 
   deletePlayer: function(name) {
+    const request = async () => {
+      var xhttp = new XMLHttpRequest();
+      xhttp.open('DELETE', `https://briancwang.com/badminton_api/users/${name}`, true)
+      xhttp.setRequestHeader('Content-Type', 'application/json')
+      xhttp.send('{}')
+    }
+    
+    request()
+
     return database.collection(PLAYERS).deleteOne({
       name
     });
